@@ -153,10 +153,39 @@ studentForm.addEventListener('submit',async e=>{
   const id=$('studentId').value;const payload={};studentFields.forEach(k=>{const el=$('st_'+k);if(el)payload[k]=el.value.trim()===''?null:el.value.trim();});
   if(!payload.full_name){setStudentMessage('Informe o nome completo do aluno.','error');return;}
   const save=$('saveStudentBtn');save.disabled=true;save.textContent='Salvando…';
-  try{const {data,error}=await supabaseClient.from('students').update(payload).eq('id',id).select('id,source_row_number,full_name,enrollment_date,belt,birth_date,guardian_name,guardian_phone,address,neighborhood,school,registration_status,admin_review_note,updated_at').single();if(error)throw error;
-    const idx=studentsCache.findIndex(s=>s.id===id);if(idx>=0)studentsCache[idx]={...studentsCache[idx],...data};setStudentMessage('Alterações salvas no Supabase.','ok');$('studentDetailMeta').textContent='Registro nº '+(data.source_row_number??'—')+' • Atualizado: '+(data.updated_at?new Date(data.updated_at).toLocaleString('pt-BR'):'agora');await renderStudents($('dashContent'));
-  }catch(err){setStudentMessage('Não foi possível salvar. Verifique as políticas RLS e os campos permitidos. Detalhe: '+(err.message||String(err)),'error');}
-  finally{save.disabled=false;save.textContent='Salvar alterações';}
+  try{
+    const selectedFields='id,source_row_number,full_name,enrollment_date,belt,birth_date,guardian_name,guardian_phone,address,neighborhood,school,registration_status,admin_review_note,updated_at';
+    const {data:updated,error:updateError}=await supabaseClient
+      .from('students')
+      .update(payload)
+      .eq('id',id)
+      .select(selectedFields)
+      .maybeSingle();
+    if(updateError)throw updateError;
+    if(!updated)throw new Error('O Supabase não confirmou nenhuma linha atualizada. Confira se o usuário tem permissão UPDATE para este aluno.');
+
+    // Confirma a persistência com uma segunda leitura independente.
+    const {data:verified,error:verifyError}=await supabaseClient
+      .from('students')
+      .select(selectedFields)
+      .eq('id',id)
+      .maybeSingle();
+    if(verifyError)throw new Error('A atualização foi enviada, mas não foi possível confirmar a leitura posterior: '+verifyError.message);
+    if(!verified)throw new Error('A atualização foi enviada, mas o registro não pôde ser relido. Confira as políticas SELECT da tabela students.');
+
+    const fieldsToVerify=['full_name','birth_date','enrollment_date','belt','registration_status','guardian_name','guardian_phone','address','neighborhood','school','admin_review_note'];
+    const mismatch=fieldsToVerify.find(k=>(verified[k]??'')!==(payload[k]??''));
+    if(mismatch)throw new Error('O banco retornou um valor diferente no campo "'+mismatch+'". O sistema não confirmou a gravação completa; recarregue a ficha antes de tentar novamente.');
+
+    const idx=studentsCache.findIndex(s=>String(s.id)===String(id));
+    if(idx>=0)studentsCache[idx]={...studentsCache[idx],...verified};
+    studentFields.forEach(k=>{const el=$('st_'+k);if(el)el.value=verified[k]??'';});
+    setStudentMessage('Alterações gravadas e confirmadas por uma nova consulta ao Supabase.','ok');
+    $('studentDetailMeta').textContent='Registro nº '+(verified.source_row_number??'—')+' • Confirmado: '+(verified.updated_at?new Date(verified.updated_at).toLocaleString('pt-BR'):'agora');
+    await renderStudents($('dashContent'));
+  }catch(err){
+    setStudentMessage('Não foi possível confirmar a gravação. Não feche a ficha antes de conferir os dados. Detalhe: '+(err.message||String(err)),'error');
+  }finally{save.disabled=false;save.textContent='Salvar alterações';}
 });
 
 $('dashNav').addEventListener('click',e=>{const b=e.target.closest('button[data-view]');if(b)renderView(b.dataset.view);});
