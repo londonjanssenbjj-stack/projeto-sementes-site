@@ -105,7 +105,8 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 @media(max-width:650px){#studentModal .student-detail-grid{grid-template-columns:1fr}#studentModal .student-detail-grid .field.full{grid-column:auto}}
 
 /* Formulário de interesse em parceria — seção pública */
-.partner-contact{margin-top:42px;padding:30px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:5px}
+.partner-contact{display:none;margin-top:42px;padding:30px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:5px}
+.partner-contact.is-open{display:block}
 .partner-contact-head{max-width:720px;margin-bottom:20px}
 .partner-contact-head h3{font:800 25px Manrope,sans-serif;color:var(--navy);margin:0 0 8px}
 .partner-contact-head p:last-child{font-size:13px;line-height:1.65;color:var(--muted);margin:0}
@@ -119,7 +120,8 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 @media(max-width:650px){.partner-contact{padding:20px}.partner-form-grid{grid-template-columns:1fr}.partner-form-grid .field.full{grid-column:auto}}
 
 /* Matrícula digital pública — adição isolada */
-.enrollment-section{background:#f7f5ef}
+.enrollment-section{display:none;background:#f7f5ef}
+.enrollment-section.is-open{display:block}
 .enrollment-card{background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:6px;padding:28px;box-shadow:0 12px 35px rgba(11,27,48,.06)}
 .enrollment-intro{max-width:780px;margin-bottom:24px}
 .enrollment-form .enroll-group{border:1px solid #e4e7ec;border-radius:6px;padding:18px;margin:18px 0}
@@ -133,6 +135,8 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 .enroll-choice{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
 .enroll-choice label{display:flex;align-items:center;gap:7px;font-size:13px;color:#344054}
 .enroll-choice input{width:auto}
+.enrollment-form .enroll-choice>input[type="checkbox"]{appearance:auto;-webkit-appearance:checkbox;display:inline-block!important;width:16px!important;height:16px!important;min-width:16px;max-width:16px;flex:0 0 16px;margin:0 4px 0 0;padding:0;border:initial;box-shadow:none;vertical-align:middle}
+.enrollment-form .enroll-choice{align-items:center;justify-content:flex-start;gap:9px;line-height:1.5}
 .enroll-note{font-size:11px;line-height:1.55;color:#667085}
 .signature-wrap{border:1px dashed #98a2b3;border-radius:6px;padding:10px;background:#fbfcfd}
 #guardianSignature{display:block;width:100%;height:180px;touch-action:none;background:#fff;border:1px solid #d0d5dd;border-radius:4px}
@@ -573,7 +577,7 @@ $('resetBtn').addEventListener('click',async()=>{
   }catch(err){showEnrollmentResult(err.message||'Falha ao enviar a matrícula. Tente novamente mais tarde.', 'error');}
   finally{submit.disabled=false;submit.textContent='Enviar matrícula digital →';}
  });
- if(TURNSTILE_SITE_KEY && !TURNSTILE_SITE_KEY.includes('INSERIR_CHAVE_PUBLICA_TURNSTILE')){
+ if(TURNSTILE_SITE_KEY!=='0x4AAAAAAFswPZX9oVKHZCXu'){
   const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;script.defer=true;
   script.onload=()=>{window.__enrollmentTurnstileWidget=window.turnstile.render('#enrollmentTurnstile',{sitekey:TURNSTILE_SITE_KEY});};
   document.head.append(script);
@@ -581,6 +585,15 @@ $('resetBtn').addEventListener('click',async()=>{
 })();
 
 
+// Exibe os formulários somente quando o visitante solicitar.
+document.querySelectorAll('a[href="#matricula"]').forEach(link=>link.addEventListener('click',()=>{
+ const section=document.getElementById('matricula');
+ if(section)section.classList.add('is-open');
+}));
+document.querySelectorAll('a[href="#contato"]').forEach(link=>link.addEventListener('click',()=>{
+ const formCard=document.querySelector('.partner-contact');
+ if(formCard)formCard.classList.add('is-open');
+}));
 // Formulário de parceria: prepara e-mail para envio pelo aplicativo do visitante.
 const partnerForm=document.getElementById('partnerForm');
 if(partnerForm){
