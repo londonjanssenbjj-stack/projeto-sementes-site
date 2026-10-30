@@ -104,6 +104,19 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 @media(max-width:800px){#dashboard .student-tools{grid-template-columns:1fr}#dashboard .student-summary,#dashboard .kpis{grid-template-columns:1fr}#dashboard .dash-head h1{font-size:20px}}
 @media(max-width:650px){#studentModal .student-detail-grid{grid-template-columns:1fr}#studentModal .student-detail-grid .field.full{grid-column:auto}}
 
+/* Formulário de interesse em parceria — seção pública */
+.partner-contact{margin-top:42px;padding:30px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:5px}
+.partner-contact-head{max-width:720px;margin-bottom:20px}
+.partner-contact-head h3{font:800 25px Manrope,sans-serif;color:var(--navy);margin:0 0 8px}
+.partner-contact-head p:last-child{font-size:13px;line-height:1.65;color:var(--muted);margin:0}
+.partner-form .field{display:grid;gap:7px;margin:0}
+.partner-form .field label{font-size:12px;font-weight:800;color:#344054}
+.partner-form input,.partner-form select,.partner-form textarea{width:100%;border:1px solid #cfd5df;border-radius:5px;padding:12px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.partner-form textarea{resize:vertical;min-height:110px}
+.partner-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.partner-form-grid .field.full{grid-column:1/-1}
+.partner-form-note{font-size:11px;line-height:1.5;color:var(--muted);margin:12px 0 0}
+@media(max-width:650px){.partner-contact{padding:20px}.partner-form-grid{grid-template-columns:1fr}.partner-form-grid .field.full{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -134,7 +147,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
  <div class="impact-intro">Impacto que começa <span>perto de casa.</span></div>
  <p class="impact-desc">Acompanhamos nossas atividades e resultados para prestar contas com clareza. Os indicadores são publicados após conferência dos registros.</p>
  <div class="metric"><strong>Corumbá</strong><small>ATUAÇÃO LOCAL</small></div>
- <div class="metric"><strong>6 frentes</strong><small>DE ATUAÇÃO SOCIAL</small></div>
+ <div class="metric"><strong>4 frentes</strong><small>DE ATUAÇÃO SOCIAL</small></div>
  <div class="metric"><strong>Em evolução</strong><small>INDICADORES DO PROJETO</small></div>
 </div></section>
 <section class="block" id="projeto"><div class="wrap story">
@@ -171,6 +184,20 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 <section class="block" id="contato"><div class="wrap partner-grid">
  <div class="partner-copy"><p class="kicker">COMO PARTICIPAR</p><h2>Há muitas formas de <em style="color:#b88e29;font-style:normal">fazer a diferença.</em></h2><p>Você pode contribuir com materiais esportivos, uniformes, serviços voluntários, apoio a palestras, ações sociais ou parcerias institucionais.</p><p>Entre em contato com a equipe para conhecer as necessidades atuais e combinar a melhor forma de ajudar.</p><a class="btn btn-dark" href="#inicio">Voltar ao início ↑</a></div>
  <div class="partner-options"><div class="partner-option"><strong>Materiais e uniformes</strong><span>Equipamentos e itens para as atividades.</span></div><div class="partner-option"><strong>Voluntariado</strong><span>Tempo, conhecimento e serviços.</span></div><div class="partner-option"><strong>Parceria empresarial</strong><span>Apoio institucional e colaboração contínua.</span></div><div class="partner-option"><strong>Ações comunitárias</strong><span>Participação em campanhas e eventos.</span></div></div>
+</div>
+<div class="wrap partner-contact">
+ <div class="partner-contact-head"><p class="kicker">FALE COM A NOSSA EQUIPE</p><h3>Quero ser parceiro</h3><p>Preencha os dados abaixo. Seu aplicativo de e-mail será aberto com a mensagem pronta para enviar à equipe do Projeto Sementes.</p></div>
+ <form id="partnerForm" class="partner-form">
+  <div class="partner-form-grid">
+   <div class="field"><label for="partnerName">Nome completo ou empresa *</label><input id="partnerName" name="name" required maxlength="160" autocomplete="name" placeholder="Digite seu nome ou empresa"></div>
+   <div class="field"><label for="partnerEmail">Seu e-mail *</label><input id="partnerEmail" name="email" type="email" required maxlength="180" autocomplete="email" placeholder="voce@exemplo.com"></div>
+   <div class="field"><label for="partnerPhone">Telefone / WhatsApp</label><input id="partnerPhone" name="phone" type="tel" maxlength="40" autocomplete="tel" placeholder="(67) 99999-9999"></div>
+   <div class="field"><label for="partnerType">Como deseja apoiar? *</label><select id="partnerType" name="type" required><option value="">Selecione uma opção</option><option>Materiais e uniformes</option><option>Voluntariado</option><option>Parceria empresarial</option><option>Ações comunitárias</option><option>Apoio a palestras e treinamentos</option><option>Outra forma de colaboração</option></select></div>
+   <div class="field full"><label for="partnerMessage">Mensagem *</label><textarea id="partnerMessage" name="message" required maxlength="3000" rows="5" placeholder="Conte como gostaria de colaborar com o Projeto Sementes."></textarea></div>
+  </div>
+  <button class="btn btn-gold" type="submit">Enviar proposta por e-mail →</button>
+  <p class="partner-form-note">O envio será concluído no seu aplicativo de e-mail após você confirmar a mensagem. Destinatário: londonjanssenbjj@gmail.com</p>
+ </form>
 </div></section>
 </main>
 <footer id="publicFooter"><div class="wrap">
@@ -368,6 +395,31 @@ $('resetBtn').addEventListener('click',async()=>{
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(session){try{await loadDashboard();}catch(err){await supabaseClient.auth.signOut();}}
 })();
+
+
+// Formulário de parceria: prepara e-mail para envio pelo aplicativo do visitante.
+const partnerForm=document.getElementById('partnerForm');
+if(partnerForm){
+ partnerForm.addEventListener('submit',event=>{
+  event.preventDefault();
+  if(!partnerForm.reportValidity())return;
+  const value=id=>document.getElementById(id).value.trim();
+  const subject='Interesse em parceria — Projeto Sementes';
+  const body=[
+   'Nova manifestação de interesse em parceria com o Projeto Sementes.',
+   '',
+   'Nome / empresa: '+value('partnerName'),
+   'E-mail: '+value('partnerEmail'),
+   'Telefone / WhatsApp: '+(value('partnerPhone')||'Não informado'),
+   'Forma de apoio: '+value('partnerType'),
+   '',
+   'Mensagem:',
+   value('partnerMessage')
+  ].join('\\n');
+  const mailto='mailto:londonjanssenbjj@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  window.location.href=mailto;
+ });
+}
 </script>
 
 </body>
