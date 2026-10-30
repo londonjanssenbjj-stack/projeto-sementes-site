@@ -404,18 +404,25 @@ if(partnerForm){
   event.preventDefault();
   if(!partnerForm.reportValidity())return;
   const value=id=>document.getElementById(id).value.trim();
-  const subject='Interesse em parceria — Projeto Sementes';
+  const subject='Proposta de Parceria Institucional | Projeto Sementes';
   const body=[
-   'Nova manifestação de interesse em parceria com o Projeto Sementes.',
+   'PROJETO SOCIAL SEMENTES',
    '',
+   'Nova manifestação de interesse em parceria.',
+   '',
+   'DADOS DO INTERESSADO',
    'Nome / empresa: '+value('partnerName'),
    'E-mail: '+value('partnerEmail'),
    'Telefone / WhatsApp: '+(value('partnerPhone')||'Não informado'),
-   'Forma de apoio: '+value('partnerType'),
    '',
-   'Mensagem:',
-   value('partnerMessage')
-  ].join('\n');
+   'FORMA DE COLABORAÇÃO',
+   value('partnerType'),
+   '',
+   'MENSAGEM',
+   value('partnerMessage'),
+   '',
+   'Mensagem enviada pelo formulário institucional do Projeto Sementes.'
+  ].join('\\n');
   const mailto='mailto:londonjanssenbjj@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
   // Abre o aplicativo de e-mail com quebras de linha reais no corpo da mensagem.
   window.location.href=mailto;
