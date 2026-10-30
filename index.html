@@ -117,6 +117,31 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 .partner-form-grid .field.full{grid-column:1/-1}
 .partner-form-note{font-size:11px;line-height:1.5;color:var(--muted);margin:12px 0 0}
 @media(max-width:650px){.partner-contact{padding:20px}.partner-form-grid{grid-template-columns:1fr}.partner-form-grid .field.full{grid-column:auto}}
+
+/* Matrícula digital pública — adição isolada */
+.enrollment-section{background:#f7f5ef}
+.enrollment-card{background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:6px;padding:28px;box-shadow:0 12px 35px rgba(11,27,48,.06)}
+.enrollment-intro{max-width:780px;margin-bottom:24px}
+.enrollment-form .enroll-group{border:1px solid #e4e7ec;border-radius:6px;padding:18px;margin:18px 0}
+.enrollment-form .enroll-group legend{padding:0 8px;color:var(--navy);font:800 16px Manrope,sans-serif}
+.enroll-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.enroll-field{display:grid;gap:6px}
+.enroll-field.full{grid-column:1/-1}
+.enroll-field label,.enroll-label{font-size:12px;font-weight:800;color:#344054}
+.enrollment-form input,.enrollment-form select,.enrollment-form textarea{width:100%;border:1px solid #cfd5df;border-radius:5px;padding:11px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.enrollment-form textarea{min-height:78px;resize:vertical}
+.enroll-choice{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
+.enroll-choice label{display:flex;align-items:center;gap:7px;font-size:13px;color:#344054}
+.enroll-choice input{width:auto}
+.enroll-note{font-size:11px;line-height:1.55;color:#667085}
+.signature-wrap{border:1px dashed #98a2b3;border-radius:6px;padding:10px;background:#fbfcfd}
+#guardianSignature{display:block;width:100%;height:180px;touch-action:none;background:#fff;border:1px solid #d0d5dd;border-radius:4px}
+.signature-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.enrollment-result{display:none;margin-top:16px;padding:13px;border-radius:5px;font-size:13px;line-height:1.5}
+.enrollment-result.show{display:block}.enrollment-result.error{background:#fff0f0;color:#912018}.enrollment-result.ok{background:#edf9f0;color:#166534}
+.enrollment-submit{margin-top:16px}
+@media(max-width:650px){.enrollment-card{padding:16px}.enroll-grid{grid-template-columns:1fr}.enroll-field.full{grid-column:auto}.enrollment-form .enroll-group{padding:13px}}
+
 </style>
 </head>
 <body>
@@ -128,7 +153,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
   </a>
   <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-label="Abrir menu">☰ Menu</button>
   <nav id="mainNav" aria-label="Navegação principal">
-   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parcerias">Parcerias</a>
+   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parcerias">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
   <div class="actions"><a class="btn btn-outline" href="#familia" id="openLogin" aria-label="Abrir acesso seguro da família e equipe">Área da Família</a><a class="btn btn-gold" href="#parcerias">Seja parceiro <span>↗</span></a></div>
  </div>
@@ -200,6 +225,83 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
  </form>
 </div></section>
 </main>
+
+<section class="block enrollment-section" id="matricula">
+ <div class="wrap">
+  <div class="section-head"><div><p class="kicker">INSCRIÇÃO DIGITAL</p><h2>Matricule seu filho no <em style="color:#b88e29;font-style:normal">Projeto Sementes.</em></h2></div><p>Preencha uma ficha individual para cada criança. Os dados de saúde e os documentos são enviados de forma privada para a equipe responsável.</p></div>
+  <div class="enrollment-card">
+   <div class="enrollment-intro"><p class="enroll-note">Todos os campos marcados com * são obrigatórios. O e-mail é opcional. A autorização de imagem e a autorização de biometria são independentes e opcionais; a recusa não impede a participação.</p></div>
+   <form id="digitalEnrollmentForm" class="enrollment-form">
+    <fieldset class="enroll-group"><legend>1. Identificação do(a) aluno(a) — menor</legend>
+     <div class="enroll-grid">
+      <div class="enroll-field full"><label for="enStudentName">Nome completo *</label><input id="enStudentName" required maxlength="180" autocomplete="name"></div>
+      <div class="enroll-field"><label for="enBirthDate">Data de nascimento *</label><input id="enBirthDate" type="date" required></div>
+      <div class="enroll-field"><label for="enSex">Sexo *</label><select id="enSex" required><option value="">Selecione</option><option>Feminino</option><option>Masculino</option></select></div>
+      <div class="enroll-field"><label for="enSchool">Escola *</label><input id="enSchool" required maxlength="180"></div>
+      <div class="enroll-field"><label for="enNeighborhood">Bairro *</label><select id="enNeighborhood" required><option value="">Selecione o bairro</option>
+       <option>Aeroporto</option><option>Beira Rio</option><option>Borrowsky</option><option>Cervejaria</option><option>Centro</option><option>Centro América</option><option>Cristo Redentor</option><option>Dom Bosco</option><option>Generoso</option><option>Guaicurus</option><option>Guarani</option><option>Guatós</option><option>Industrial</option><option>Jardim dos Estados</option><option>Maria Leite</option><option>Nossa Senhora de Fátima</option><option>Nova Corumbá</option><option>Padre Ernesto Sassida</option><option>Popular Nova</option><option>Popular Velha</option><option>Previsul</option><option>Universitário</option><option>Vila Mamona</option><option value="Outro">Outro</option>
+      </select></div>
+      <div class="enroll-field" id="enOtherNeighborhoodWrap" hidden><label for="enOtherNeighborhood">Informe o bairro *</label><input id="enOtherNeighborhood" maxlength="120"></div>
+      <div class="enroll-field full"><label for="enAddress">Endereço completo (rua, número e complemento) *</label><input id="enAddress" required maxlength="500" autocomplete="street-address"></div>
+     </div>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>2. Identificação do responsável legal</legend>
+     <div class="enroll-grid">
+      <div class="enroll-field full"><label for="enGuardianName">Nome completo do responsável *</label><input id="enGuardianName" required maxlength="180" autocomplete="name"></div>
+      <div class="enroll-field"><label for="enGuardianDocument">CIN/RG *</label><input id="enGuardianDocument" required maxlength="30" autocomplete="off"></div>
+      <div class="enroll-field"><label for="enGuardianPhone">Telefone / WhatsApp *</label><input id="enGuardianPhone" type="tel" required maxlength="30" autocomplete="tel"></div>
+      <div class="enroll-field"><label for="enGuardianEmail">E-mail (opcional)</label><input id="enGuardianEmail" type="email" maxlength="180" autocomplete="email"></div>
+      <div class="enroll-field"><label for="enRelationship">Parentesco / vínculo *</label><select id="enRelationship" required><option value="">Selecione</option><option>Mãe</option><option>Pai</option><option>Avó</option><option>Avô</option><option>Tutor(a) legal</option><option>Outro responsável legal</option></select></div>
+     </div>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>3. Autorização e ciência</legend>
+     <p class="enroll-note">Ao enviar, o responsável declara que autoriza a participação gratuita do(a) menor nas atividades de Jiu-Jitsu do Projeto Social Sementes e que comunicará à coordenação qualquer condição de saúde ou limitação que possa interferir na participação.</p>
+     <label class="enroll-choice"><input id="enParticipation" type="checkbox" required> Li e aceito o termo de participação e responsabilidade. *</label>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>4. Declaração de saúde</legend>
+     <p class="enroll-note">Assinale uma opção em cada item. Se responder “Sim”, descreva a informação no campo de especificações. Uma resposta “Não” significa declaração expressa do responsável; não deixe perguntas sem resposta.</p>
+     <div class="enroll-grid">
+      <div class="enroll-field"><span class="enroll-label">Problema cardíaco / pressão *</span><div class="enroll-choice"><label><input type="radio" name="health_cardiaco_pressao" value="Sim" required> Sim</label><label><input type="radio" name="health_cardiaco_pressao" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Asma / problema respiratório *</span><div class="enroll-choice"><label><input type="radio" name="health_asma_respiratorio" value="Sim" required> Sim</label><label><input type="radio" name="health_asma_respiratorio" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Lesão óssea / muscular / articular *</span><div class="enroll-choice"><label><input type="radio" name="health_lesao_musculoesqueletica" value="Sim" required> Sim</label><label><input type="radio" name="health_lesao_musculoesqueletica" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Uso contínuo de medicamento *</span><div class="enroll-choice"><label><input type="radio" name="health_medicamento_continuo" value="Sim" required> Sim</label><label><input type="radio" name="health_medicamento_continuo" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Alergia *</span><div class="enroll-choice"><label><input type="radio" name="health_alergia" value="Sim" required> Sim</label><label><input type="radio" name="health_alergia" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Desmaio / tontura durante exercício *</span><div class="enroll-choice"><label><input type="radio" name="health_desmaio_tontura" value="Sim" required> Sim</label><label><input type="radio" name="health_desmaio_tontura" value="Não"> Não</label></div></div>
+      <div class="enroll-field full"><label for="enHealthDetails">Se SIM ou NÃO, especifique / outras informações de saúde *</label><textarea id="enHealthDetails" required maxlength="2000" placeholder="Descreva exatamente as informações que deseja declarar. Se não houver especificações, escreva: Não."></textarea></div>
+     </div>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>5. Segurança, responsabilidade e atendimento</legend>
+     <p class="enroll-note">O responsável declara que as informações prestadas são verdadeiras, compromete-se a comunicar alterações de saúde e autoriza a equipe a prestar os primeiros cuidados e, em situação de urgência ou emergência, acionar serviço especializado e/ou SAMU, quando necessário.</p>
+     <div class="enroll-grid">
+      <div class="enroll-field"><label for="enEmergencyName">Nome do contato de emergência *</label><input id="enEmergencyName" required maxlength="180"></div>
+      <div class="enroll-field"><label for="enEmergencyPhone">Telefone do contato de emergência *</label><input id="enEmergencyPhone" type="tel" required maxlength="30"></div>
+     </div>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>6. Uso de imagem, voz e nome</legend>
+     <p class="enroll-note">Autorização opcional para captação e utilização gratuita de imagem, voz e nome do(a) menor em registros e divulgação institucional do Projeto, sem finalidade comercial.</p>
+     <div class="enroll-choice"><label><input type="radio" name="enImageConsent" value="true" required> Autorizo</label><label><input type="radio" name="enImageConsent" value="false"> Não autorizo</label></div>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>7. Dados pessoais e comunicação</legend>
+     <p class="enroll-note">Os dados serão tratados na medida necessária à inscrição, organização das atividades, contato com o responsável, segurança do aluno e cumprimento de obrigações legais. Dados de saúde serão mantidos em área restrita.</p>
+     <label class="en-choice"><input id="enPrivacy" type="checkbox" required> Li e estou ciente do aviso de privacidade e do tratamento dos dados para os fins informados. *</label>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>8. Biometria facial — autorização independente</legend>
+     <p class="enroll-note">A biometria facial é opcional e não é condição para participar do Projeto.</p>
+     <div class="enroll-choice"><label><input type="radio" name="enBiometricConsent" value="true" required> Autorizo</label><label><input type="radio" name="enBiometricConsent" value="false"> Não autorizo</label></div>
+    </fieldset>
+    <fieldset class="enroll-group"><legend>9. Assinatura digital do responsável</legend>
+     <p class="enroll-note">Assine no espaço abaixo usando o dedo, caneta digital ou mouse. A assinatura deve ser feita pelo responsável legal identificado acima.</p>
+     <div class="signature-wrap"><canvas id="guardianSignature" aria-label="Área para assinatura digital"></canvas><div class="signature-actions"><button class="btn" id="clearGuardianSignature" type="button" style="background:#f3f4f6;color:#344054;border-color:#d0d5dd">Limpar assinatura</button></div></div>
+     <div class="enroll-field" style="margin-top:12px"><label for="enSignatureName">Nome completo para confirmação da assinatura *</label><input id="enSignatureName" required maxlength="180"></div>
+    </fieldset>
+    <div class="enroll-field full"><span class="enroll-label">Verificação de segurança</span><div id="enrollmentTurnstile"></div><p class="enroll-note">Conclua a verificação de segurança para enviar a matrícula.</p></div>
+    <button class="btn btn-gold enrollment-submit" type="submit">Enviar matrícula digital →</button>
+    <div id="enrollmentResult" class="enrollment-result" role="status" aria-live="polite"></div>
+   </form>
+  </div>
+ </div>
+</section>
+
 <footer id="publicFooter"><div class="wrap">
  <div class="footer-grid">
   <div><a class="brand footer-brand" href="#inicio"><img class="brand-mark brand-logo-secondary" src="logo_secundaria.png" alt="Logotipo secundário do Projeto Sementes"><span class="brand-copy"><small>PROJETO SOCIAL</small><strong>SEMENTES</strong><em>JIU-JITSU • CIDADANIA • FAMÍLIA</em></span></a><p>Plantando valores, formando cidadãos e transformando vidas.</p></div>
@@ -394,6 +496,88 @@ $('resetBtn').addEventListener('click',async()=>{
   if(!supabaseClient)return;
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(session){try{await loadDashboard();}catch(err){await supabaseClient.auth.signOut();}}
+})();
+
+
+
+// Matrícula digital — integração com a Edge Function; exige chave pública Turnstile.
+(function(){
+ const enrollmentForm=document.getElementById('digitalEnrollmentForm');
+ if(!enrollmentForm)return;
+ const TURNSTILE_SITE_KEY='0x4AAAAAAFswPZX9oVKHZCXu';
+ const ENROLLMENT_FUNCTION_URL=SUPABASE_URL+'/functions/v1/submit-enrollment';
+ const result=document.getElementById('enrollmentResult');
+ const showEnrollmentResult=(msg,kind)=>{result.textContent=msg;result.className='enrollment-result show '+kind;result.scrollIntoView({behavior:'smooth',block:'nearest'});};
+ const neighborhood=document.getElementById('enNeighborhood');
+ const otherWrap=document.getElementById('enOtherNeighborhoodWrap');
+ const otherInput=document.getElementById('enOtherNeighborhood');
+ neighborhood.addEventListener('change',()=>{const other=neighborhood.value==='Outro';otherWrap.hidden=!other;otherInput.required=other;if(!other)otherInput.value='';});
+ const canvas=document.getElementById('guardianSignature'),ctx=canvas.getContext('2d');
+ let drawing=false,hasSignature=false;
+ function resizeSignature(){
+   const rect=canvas.getBoundingClientRect(),ratio=Math.max(window.devicePixelRatio||1,1);
+   const old=hasSignature?canvas.toDataURL():null;
+   canvas.width=Math.max(1,Math.floor(rect.width*ratio));canvas.height=Math.max(1,Math.floor(180*ratio));
+   ctx.setTransform(ratio,0,0,ratio,0,0);ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#172131';
+   if(old){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,rect.width,180);img.src=old;}
+ }
+ resizeSignature();window.addEventListener('resize',resizeSignature);
+ function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+ canvas.addEventListener('pointerdown',e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
+ canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;});
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>canvas.addEventListener(ev,()=>{drawing=false;}));
+ document.getElementById('clearGuardianSignature').addEventListener('click',()=>{ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;});
+ function radioValue(name){const selected=enrollmentForm.querySelector('input[name="'+name+'"]:checked');return selected?selected.value:null;}
+ function turnstileToken(){const el=document.querySelector('[name="cf-turnstile-response"]');return el?el.value:'';}
+ enrollmentForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(!enrollmentForm.reportValidity())return;
+  if(!TURNSTILE_SITE_KEY || TURNSTILE_SITE_KEY.includes('INSERIR_CHAVE_PUBLICA_TURNSTILE')){
+   showEnrollmentResult('A verificação anti-robô ainda não foi configurada. Entre em contato com a Secretaria.', 'error');return;
+  }
+  if(!hasSignature){showEnrollmentResult('A assinatura do responsável é obrigatória. Assine no quadro indicado.', 'error');return;}
+  const guardianName=document.getElementById('enGuardianName').value.trim();
+  const signatureName=document.getElementById('enSignatureName').value.trim();
+  if(guardianName.toLocaleLowerCase('pt-BR')!==signatureName.toLocaleLowerCase('pt-BR')){
+   showEnrollmentResult('O nome para assinatura deve corresponder ao nome completo do responsável.', 'error');return;
+  }
+  const health={
+   cardiaco_pressao:radioValue('health_cardiaco_pressao'),
+   asma_respiratorio:radioValue('health_asma_respiratorio'),
+   lesao_musculoesqueletica:radioValue('health_lesao_musculoesqueletica'),
+   medicamento_continuo:radioValue('health_medicamento_continuo'),
+   alergia:radioValue('health_alergia'),
+   desmaio_tontura:radioValue('health_desmaio_tontura'),
+   detalhes:document.getElementById('enHealthDetails').value.trim()
+  };
+  const neighborhoodValue=neighborhood.value==='Outro'?otherInput.value.trim():neighborhood.value;
+  const payload={
+   turnstile_token:turnstileToken(),
+   guardian:{full_name:guardianName,document:document.getElementById('enGuardianDocument').value.trim(),phone:document.getElementById('enGuardianPhone').value.trim(),email:document.getElementById('enGuardianEmail').value.trim(),relationship:document.getElementById('enRelationship').value},
+   student:{full_name:document.getElementById('enStudentName').value.trim(),birth_date:document.getElementById('enBirthDate').value,sex:document.getElementById('enSex').value,school:document.getElementById('enSchool').value.trim(),neighborhood:neighborhoodValue,address:document.getElementById('enAddress').value.trim()},
+   health_answers:health,
+   emergency_contact:{name:document.getElementById('enEmergencyName').value.trim(),phone:document.getElementById('enEmergencyPhone').value.trim()},
+   consents:{participation:document.getElementById('enParticipation').checked,image:radioValue('enImageConsent')==='true',biometrics:radioValue('enBiometricConsent')==='true'},
+   versions:{privacy:'2026-10',participation:'2026-10',image:'2026-10',biometrics:'2026-10'},
+   signature_name:signatureName,
+   signature_png:canvas.toDataURL('image/png')
+  };
+  const submit=enrollmentForm.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent='Enviando matrícula…';
+  try{
+   const response=await fetch(ENROLLMENT_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify(payload)});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(data.error||'Não foi possível concluir a matrícula.');
+   showEnrollmentResult('Matrícula recebida com sucesso. Protocolo: '+data.protocol+'. Guarde este número para contato com a Secretaria.', 'ok');
+   enrollmentForm.reset();ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;otherWrap.hidden=true;otherInput.required=false;
+   if(window.turnstile&&window.__enrollmentTurnstileWidget)window.turnstile.reset(window.__enrollmentTurnstileWidget);
+  }catch(err){showEnrollmentResult(err.message||'Falha ao enviar a matrícula. Tente novamente mais tarde.', 'error');}
+  finally{submit.disabled=false;submit.textContent='Enviar matrícula digital →';}
+ });
+ if(TURNSTILE_SITE_KEY!=='0x4AAAAAAFswPZX9oVKHZCXu'){
+  const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;script.defer=true;
+  script.onload=()=>{window.__enrollmentTurnstileWidget=window.turnstile.render('#enrollmentTurnstile',{sitekey:TURNSTILE_SITE_KEY});};
+  document.head.append(script);
+ }
 })();
 
 
