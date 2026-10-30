@@ -351,7 +351,6 @@ body.standalone-view .actions #openLogin{display:none}
     <fieldset class="enroll-group" data-wizard-step="5"><legend>9. Assinatura digital do responsável</legend>
      <p class="enroll-note">Assine no espaço abaixo usando o dedo, caneta digital ou mouse. A assinatura deve ser feita pelo responsável legal identificado acima.</p>
      <div class="signature-wrap"><canvas id="guardianSignature" aria-label="Área para assinatura digital"></canvas><div class="signature-actions"><button class="btn" id="clearGuardianSignature" type="button" style="background:#f3f4f6;color:#344054;border-color:#d0d5dd">Limpar assinatura</button></div></div>
-     <div class="enroll-field" style="margin-top:12px"><label for="enSignatureName">Nome completo para confirmação da assinatura *</label><input id="enSignatureName" required maxlength="180"></div>
     </fieldset>
     <fieldset class="enroll-group" data-wizard-step="5"><legend>Verificação e envio</legend>
      <div class="enroll-field full"><span class="enroll-label">Verificação de segurança</span><div id="enrollmentTurnstile"></div><p class="enroll-note">Conclua a verificação de segurança para enviar a matrícula.</p></div>
@@ -604,10 +603,7 @@ $('resetBtn').addEventListener('click',async()=>{
   }
   if(!hasSignature){showEnrollmentResult('A assinatura do responsável é obrigatória. Assine no quadro indicado.', 'error');return;}
   const guardianName=document.getElementById('enGuardianName').value.trim();
-  const signatureName=document.getElementById('enSignatureName').value.trim();
-  if(guardianName.toLocaleLowerCase('pt-BR')!==signatureName.toLocaleLowerCase('pt-BR')){
-   showEnrollmentResult('O nome para assinatura deve corresponder ao nome completo do responsável.', 'error');return;
-  }
+  const signatureName=guardianName;
   const health={
    cardiaco_pressao:radioValue('health_cardiaco_pressao'),
    asma_respiratorio:radioValue('health_asma_respiratorio'),
@@ -626,7 +622,7 @@ $('resetBtn').addEventListener('click',async()=>{
    emergency_contact:{name:document.getElementById('enEmergencyName').value.trim(),phone:document.getElementById('enEmergencyPhone').value.trim()},
    consents:{participation:document.getElementById('enParticipation').checked,image:radioValue('enImageConsent')==='true',biometrics:radioValue('enBiometricConsent')==='true'},
    versions:{privacy:'2026-10',participation:'2026-10',image:'2026-10',biometrics:'2026-10'},
-   signature_name:signatureName,
+   signature_name:guardianName,
    signature_png:canvas.toDataURL('image/png')
   };
   const submit=enrollmentForm.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent='Enviando matrícula…';
@@ -719,22 +715,53 @@ if(partnerForm){
  const indicators=[...document.querySelectorAll('[data-wizard-indicator]')];
  const prev=document.getElementById('enrollmentPrev'),next=document.getElementById('enrollmentNext'),caption=document.getElementById('wizardStepCaption');
  let step=1;const total=5;
+
+ // Telefones brasileiros: aceita DDD + 8 ou 9 dígitos, com ou sem +55.
+ const phoneFields=['enGuardianPhone','enEmergencyPhone'].map(id=>document.getElementById(id)).filter(Boolean);
+ const phoneDigits=value=>String(value||'').replace(/\\D/g,'').replace(/^55(?=\\d{10,11}$)/,'');
+ function validatePhone(field){
+  const digits=phoneDigits(field.value);
+  const valid=/^[1-9][0-9]9?[0-9]{8}$/.test(digits);
+  field.setCustomValidity(valid?'':'Informe um telefone brasileiro válido com DDD (10 ou 11 números).');
+  return valid;
+ }
+ phoneFields.forEach(field=>{
+  field.addEventListener('input',()=>validatePhone(field));
+  field.addEventListener('blur',()=>validatePhone(field));
+ });
+
+ // Padrão profissional para nomes: iniciais maiúsculas e restante minúsculo.
+ const nameFields=['enStudentName','enGuardianName','enEmergencyName'].map(id=>document.getElementById(id)).filter(Boolean);
+ const particles=new Set(['de','da','do','das','dos','e']);
+ function properName(value){
+  const words=String(value||'').trim().replace(/\\s+/g,' ').toLocaleLowerCase('pt-BR').split(' ');
+  return words.map((word,index)=>word.split('-').map(part=>{
+   if(!part)return part;
+   if(index>0&&particles.has(part))return part;
+   return part.charAt(0).toLocaleUpperCase('pt-BR')+part.slice(1);
+  }).join('-')).join(' ');
+ }
+ nameFields.forEach(field=>field.addEventListener('blur',()=>{field.value=properName(field.value);}));
  function render(){
   groups.forEach(g=>g.classList.toggle('wizard-active',Number(g.dataset.wizardStep)===step));
   indicators.forEach(i=>{const n=Number(i.dataset.wizardIndicator);i.classList.toggle('active',n===step);i.classList.toggle('done',n<step);});
-  prev.disabled=step===1;next.textContent=step===total?'Revisar e concluir →':'Próxima etapa →';caption.textContent='Etapa '+step+' de '+total;
+  prev.disabled=step===1;next.hidden=step===total;next.textContent='Próxima etapa →';caption.textContent='Etapa '+step+' de '+total;
   if(step===5)document.dispatchEvent(new Event('enrollment:signature-visible'));
  }
  function validateStep(n){
   const fields=groups.filter(g=>Number(g.dataset.wizardStep)===n).flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).filter(el=>el.willValidate);
-  for(const el of fields){if(!el.checkValidity()){el.reportValidity();el.focus({preventScroll:true});return false;}}
+  for(const el of fields){
+   if(phoneFields.includes(el))validatePhone(el);
+   if(!el.checkValidity()){el.reportValidity();el.focus({preventScroll:true});return false;}
+  }
   return true;
  }
  next.addEventListener('click',()=>{
   if(!validateStep(step))return;
   if(step<total){step++;render();document.getElementById('matricula').scrollIntoView({behavior:'smooth',block:'start'});}
   else {
-   const invalid=groups.flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).find(el=>el.willValidate&&!el.checkValidity());
+   phoneFields.forEach(validatePhone);
+  const invalid=groups.flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).find(el=>el.willValidate&&!el.checkValidity());
    if(invalid){step=Number(invalid.closest('fieldset').dataset.wizardStep);render();invalid.reportValidity();invalid.focus({preventScroll:true});return;}
    const sig=document.getElementById('guardianSignature');
    if(sig)sig.scrollIntoView({behavior:'smooth',block:'center'});
@@ -743,6 +770,7 @@ if(partnerForm){
  });
  prev.addEventListener('click',()=>{if(step>1){step--;render();document.getElementById('matricula').scrollIntoView({behavior:'smooth',block:'start'});}});
  form.addEventListener('submit',e=>{
+  phoneFields.forEach(validatePhone);
   const invalid=groups.flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).find(el=>el.willValidate&&!el.checkValidity());
   if(invalid){e.preventDefault();step=Number(invalid.closest('fieldset').dataset.wizardStep);render();invalid.reportValidity();invalid.focus({preventScroll:true});}
  });
