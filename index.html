@@ -105,8 +105,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 @media(max-width:650px){#studentModal .student-detail-grid{grid-template-columns:1fr}#studentModal .student-detail-grid .field.full{grid-column:auto}}
 
 /* Formulário de interesse em parceria — seção pública */
-.partner-contact{display:none;margin-top:42px;padding:30px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:5px}
-.partner-contact.is-open{display:block}
+.partner-contact{margin-top:42px;padding:30px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:5px}
 .partner-contact-head{max-width:720px;margin-bottom:20px}
 .partner-contact-head h3{font:800 25px Manrope,sans-serif;color:var(--navy);margin:0 0 8px}
 .partner-contact-head p:last-child{font-size:13px;line-height:1.65;color:var(--muted);margin:0}
@@ -120,14 +119,18 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 @media(max-width:650px){.partner-contact{padding:20px}.partner-form-grid{grid-template-columns:1fr}.partner-form-grid .field.full{grid-column:auto}}
 
 /* Matrícula digital pública — adição isolada */
-.enrollment-section{display:none;background:#f7f5ef}
-.enrollment-section.is-open{display:block}
+.enrollment-section{background:#f7f5ef}
 .enrollment-card{background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:6px;padding:28px;box-shadow:0 12px 35px rgba(11,27,48,.06)}
 .enrollment-intro{max-width:780px;margin-bottom:24px}
 .enrollment-form .enroll-group{border:1px solid #e4e7ec;border-radius:6px;padding:18px;margin:18px 0}
 .enrollment-form .enroll-group legend{padding:0 8px;color:var(--navy);font:800 16px Manrope,sans-serif}
 .enroll-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .enroll-field{display:grid;gap:6px}
+/* Correções de layout: campos condicionais e consentimento */
+.enrollment-form [hidden]{display:none!important}
+.enrollment-form .en-choice{display:flex;align-items:flex-start;justify-content:flex-start;gap:8px;width:100%;text-align:left;margin:8px 0}
+.enrollment-form .en-choice input[type="checkbox"]{width:16px!important;min-width:16px;height:16px;margin:2px 0 0;flex:0 0 16px}
+.enrollment-form .en-choice label{display:inline;line-height:1.5}
 .enroll-field.full{grid-column:1/-1}
 .enroll-field label,.enroll-label{font-size:12px;font-weight:800;color:#344054}
 .enrollment-form input,.enrollment-form select,.enrollment-form textarea{width:100%;border:1px solid #cfd5df;border-radius:5px;padding:11px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
@@ -135,8 +138,6 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 .enroll-choice{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
 .enroll-choice label{display:flex;align-items:center;gap:7px;font-size:13px;color:#344054}
 .enroll-choice input{width:auto}
-.enrollment-form .enroll-choice>input[type="checkbox"]{appearance:auto;-webkit-appearance:checkbox;display:inline-block!important;width:16px!important;height:16px!important;min-width:16px;max-width:16px;flex:0 0 16px;margin:0 4px 0 0;padding:0;border:initial;box-shadow:none;vertical-align:middle}
-.enrollment-form .enroll-choice{align-items:center;justify-content:flex-start;gap:9px;line-height:1.5}
 .enroll-note{font-size:11px;line-height:1.55;color:#667085}
 .signature-wrap{border:1px dashed #98a2b3;border-radius:6px;padding:10px;background:#fbfcfd}
 #guardianSignature{display:block;width:100%;height:180px;touch-action:none;background:#fff;border:1px solid #d0d5dd;border-radius:4px}
@@ -145,6 +146,52 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 .enrollment-result.show{display:block}.enrollment-result.error{background:#fff0f0;color:#912018}.enrollment-result.ok{background:#edf9f0;color:#166534}
 .enrollment-submit{margin-top:16px}
 @media(max-width:650px){.enrollment-card{padding:16px}.enroll-grid{grid-template-columns:1fr}.enroll-field.full{grid-column:auto}.enrollment-form .enroll-group{padding:13px}}
+
+
+/* Telas exclusivas de Matrícula e Parceria — navegação sem alterar a página inicial */
+body.standalone-view #publicSite>section{display:none!important}
+body.standalone-view #publicSite>section#contato{display:block!important}
+body.standalone-view #publicSite>section#contato .partner-copy h2{max-width:620px}
+body.standalone-view #publicSite>section#contato{padding-top:54px;padding-bottom:76px;min-height:calc(100vh - 82px)}
+body.enrollment-view #publicSite{display:none!important}
+body.enrollment-view #matricula{display:block!important;min-height:calc(100vh - 82px);padding-top:48px;padding-bottom:76px}
+body.partner-view #matricula{display:none!important}
+body.home-view #matricula{display:none!important}
+#screenBack{display:none}
+body.standalone-view #screenBack{display:inline-flex}
+body.standalone-view #mainNav{display:none}
+body.standalone-view #publicFooter{display:none!important}
+body.standalone-view .actions #openLogin{display:none}
+.standalone-heading{max-width:760px;margin:0 auto 28px;text-align:center}
+.standalone-heading .kicker{margin-bottom:12px}
+.standalone-heading h2{font:800 clamp(30px,4vw,46px)/1.08 Manrope,sans-serif;color:var(--navy);letter-spacing:-1.4px;margin:0 0 12px}
+.standalone-heading p{font-size:14px;line-height:1.7;color:var(--muted);margin:0 auto;max-width:650px}
+.partner-contact{max-width:900px;margin:0 auto;background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:8px;padding:30px;box-shadow:0 18px 45px rgba(11,27,48,.08)}
+.partner-contact-head{text-align:center;margin-bottom:24px}
+.partner-contact-head h3{font:800 25px Manrope,sans-serif;color:var(--navy);margin:0 0 8px}
+.partner-contact-head p:last-child{color:var(--muted);font-size:13px;line-height:1.6}
+.enrollment-wizard{display:flex;align-items:center;gap:8px;margin:0 0 24px;}
+.enrollment-wizard-step{flex:1;display:flex;align-items:center;gap:8px;min-width:0;color:#8992a0;font-size:11px;font-weight:800}
+.enrollment-wizard-step:after{content:"";height:2px;background:#e5e7eb;flex:1}
+.enrollment-wizard-step:last-child:after{display:none}
+.enrollment-wizard-step span{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:#e9edf2;color:#526071}
+.enrollment-wizard-step.active,.enrollment-wizard-step.done{color:var(--navy)}
+.enrollment-wizard-step.active span,.enrollment-wizard-step.done span{background:var(--gold);color:var(--navy)}
+.enrollment-wizard-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.enrollment-form fieldset[data-wizard-step]{display:none}
+.enrollment-form fieldset[data-wizard-step].wizard-active{display:block}
+.wizard-controls{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px}
+.wizard-controls .btn{min-width:130px}
+.wizard-step-caption{font-size:12px;color:var(--muted);font-weight:700}
+@media(max-width:650px){
+ body.standalone-view #publicSite>section#contato{padding-top:32px}
+ .partner-contact{padding:19px;margin-left:16px;margin-right:16px}
+ .enrollment-wizard{gap:3px}
+ .enrollment-wizard-step{justify-content:center;flex:1}
+ .enrollment-wizard-label{display:none}
+ .enrollment-wizard-step:after{max-width:16px}
+ .wizard-controls .btn{min-width:0;padding:12px 13px}
+}
 
 </style>
 </head>
@@ -156,10 +203,11 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
    <span class="brand-copy"><small>PROJETO SOCIAL</small><strong>SEMENTES</strong><em>JIU-JITSU • CIDADANIA • FAMÍLIA</em></span>
   </a>
   <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-label="Abrir menu">☰ Menu</button>
+  <a class="btn btn-outline" href="#inicio" id="screenBack" aria-label="Voltar à página inicial">← Voltar ao início</a>
   <nav id="mainNav" aria-label="Navegação principal">
-   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parcerias">Parcerias</a><a href="#matricula">Matrícula</a>
+   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parceria">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
-  <div class="actions"><a class="btn btn-outline" href="#familia" id="openLogin" aria-label="Abrir acesso seguro da família e equipe">Área da Família</a><a class="btn btn-gold" href="#parcerias">Seja parceiro <span>↗</span></a></div>
+  <div class="actions"><a class="btn btn-outline" href="#familia" id="openLogin" aria-label="Abrir acesso seguro da família e equipe">Área da Família</a><a class="btn btn-gold" href="#parceria">Seja parceiro <span>↗</span></a></div>
  </div>
 </header>
 <main id="publicSite">
@@ -168,7 +216,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
   <p class="eyebrow">Corumbá · Mato Grosso do Sul</p>
   <h1>Plantando valores.<br><span>Transformando vidas.</span></h1>
   <p class="hero-copy">Jiu-Jitsu, educação e solidariedade para fortalecer crianças, adolescentes e famílias — dentro e fora do tatame.</p>
-  <div class="hero-buttons"><a class="btn btn-gold" href="#atuacao">Conheça nossas frentes <span>→</span></a><a class="btn btn-outline" href="#parcerias">Apoie essa missão</a></div>
+  <div class="hero-buttons"><a class="btn btn-gold" href="#atuacao">Conheça nossas frentes <span>→</span></a><a class="btn btn-outline" href="#parceria">Apoie essa missão</a></div>
   <div class="hero-note"><span>ESPORTE</span><span>EDUCAÇÃO</span><span>FAMÍLIA</span><span>COMUNIDADE</span></div>
  </div></div>
 </section>
@@ -189,10 +237,10 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 <section class="block programs" id="atuacao"><div class="wrap">
  <div class="section-head"><div><p class="kicker">NOSSAS FRENTES</p><h2>Muito além do <em>Jiu-Jitsu.</em></h2></div><p>Uma atuação integrada que valoriza o desenvolvimento pessoal, a convivência familiar e o compromisso com a comunidade.</p></div>
  <div class="program-grid">
-  <article class="program"><div class="program-img" role="img" aria-label="Atividade esportiva de luta"></div><div class="program-body"><span class="program-num">01 / ESPORTE</span><h3>Jiu-Jitsu e disciplina</h3><p>Treino, respeito, autocontrole e perseverança para a vida.</p><a class="text-link" href="#parcerias">CONHEÇA A INICIATIVA ↗</a></div></article>
-  <article class="program"><div class="program-img" role="img" aria-label="Ambiente educativo"></div><div class="program-body"><span class="program-num">02 / EDUCAÇÃO</span><h3>Cidadania e palestras</h3><p>Aprendizado socioeducativo, escolhas conscientes e valores.</p><a class="text-link" href="#parcerias">CONHEÇA A INICIATIVA ↗</a></div></article>
+  <article class="program"><div class="program-img" role="img" aria-label="Atividade esportiva de luta"></div><div class="program-body"><span class="program-num">01 / ESPORTE</span><h3>Jiu-Jitsu e disciplina</h3><p>Treino, respeito, autocontrole e perseverança para a vida.</p><a class="text-link" href="#parceria">CONHEÇA A INICIATIVA ↗</a></div></article>
+  <article class="program"><div class="program-img" role="img" aria-label="Ambiente educativo"></div><div class="program-body"><span class="program-num">02 / EDUCAÇÃO</span><h3>Cidadania e palestras</h3><p>Aprendizado socioeducativo, escolhas conscientes e valores.</p><a class="text-link" href="#parceria">CONHEÇA A INICIATIVA ↗</a></div></article>
   <article class="program"><div class="program-img" role="img" aria-label="Família, fé e formação de valores"></div><div class="program-body"><span class="program-num">03 / FAMÍLIA E VALORES</span><h3>Família, fé e formação</h3><p>Fortalecimento dos vínculos familiares, convivência e formação de valores cristãos.</p><a class="text-link" href="#familia">SAIBA MAIS ↗</a></div></article>
-  <article class="program"><div class="program-img" role="img" aria-label="Crianças em atividade em grupo"></div><div class="program-body"><span class="program-num">04 / COMUNIDADE</span><h3>Ações sociais</h3><p>Solidariedade e mobilização para apoiar a comunidade.</p><a class="text-link" href="#parcerias">COMO CONTRIBUIR ↗</a></div></article>
+  <article class="program"><div class="program-img" role="img" aria-label="Crianças em atividade em grupo"></div><div class="program-body"><span class="program-num">04 / COMUNIDADE</span><h3>Ações sociais</h3><p>Solidariedade e mobilização para apoiar a comunidade.</p><a class="text-link" href="#parceria">COMO CONTRIBUIR ↗</a></div></article>
 
 
  </div>
@@ -201,7 +249,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
  <div class="family-photo" role="img" aria-label="Família e comunidade reunidas"></div>
  <div class="family-copy"><p class="kicker">FAMÍLIA, A BASE DE TUDO</p><h2>Uma criança não caminha <em style="color:#b88e29;font-style:normal">sozinha.</em></h2><p>A família faz parte da jornada. Queremos construir uma relação próxima com os responsáveis, com informações claras sobre as atividades e espaço para acompanhar o desenvolvimento dos alunos.</p>
   <div class="family-points"><div class="family-point">Cadastro acompanhado<small>Informações organizadas e atualizadas pelos responsáveis.</small></div><div class="family-point">Comunicação clara<small>Orientações sobre aulas, atividades e eventos.</small></div></div>
-  <a class="btn btn-dark" href="#contato">Informações para as famílias →</a>
+  <a class="btn btn-dark" href="#parceria">Informações para as famílias →</a>
  </div>
 </div></section>
 <section class="block section-dark" id="galeria"><div class="wrap">
@@ -209,8 +257,8 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
  <div class="gallery"><img src="Festa_Infantil_Comunitaria.png" alt="Festa infantil comunitária" loading="lazy"><img src="Culto_Noturno_Igreja.png" alt="Culto noturno na igreja" loading="lazy"><img src="Aula_Jiu_Jitsu_Dojo.png" alt="Aula de Jiu-Jitsu no dojo" loading="lazy"><img src="Lutando_Jiu_Jitsu.jpeg" alt="Prática de Jiu-Jitsu" loading="lazy"><img src="TTreino_Jiu_Jitsu_Academia.png" alt="Treino de Jiu-Jitsu infantil" loading="lazy"><img src="Treino_Jiu_Jitsu_Infantil.png" alt="Treino de Jiu-Jitsu na academia" loading="lazy"><img src="Turma_Jiu_Jitsu_Dojo.png" alt="Turma de Jiu-Jitsu do Projeto Sementes" loading="lazy"></div>
  <p class="notice">Prévia visual: fotografias ilustrativas. Antes da publicação, utilize imagens reais do projeto com autorização adequada dos responsáveis.</p>
 </div></section>
-<section class="cta" id="parcerias"><div class="wrap cta-inner"><div><h2>Ajude a cultivar oportunidades.</h2><p>Empresas, voluntários e apoiadores podem fazer parte dessa missão.</p></div><a class="btn" href="#contato">Quero ser parceiro <span>→</span></a></div></section>
-<section class="block" id="contato"><div class="wrap partner-grid">
+<section class="cta" id="parcerias"><div class="wrap cta-inner"><div><h2>Ajude a cultivar oportunidades.</h2><p>Empresas, voluntários e apoiadores podem fazer parte dessa missão.</p></div><a class="btn" href="#parceria">Quero ser parceiro <span>→</span></a></div></section>
+<section class="block" id="contato"><div class="wrap standalone-heading"><p class="kicker">CONEXÃO E COLABORAÇÃO</p><h2>Seja parceiro do <em style="color:#b88e29;font-style:normal">Projeto Sementes.</em></h2><p>Uma tela exclusiva para empresas, voluntários e apoiadores apresentarem como desejam contribuir com nossa missão.</p></div><div class="wrap partner-grid">
  <div class="partner-copy"><p class="kicker">COMO PARTICIPAR</p><h2>Há muitas formas de <em style="color:#b88e29;font-style:normal">fazer a diferença.</em></h2><p>Você pode contribuir com materiais esportivos, uniformes, serviços voluntários, apoio a palestras, ações sociais ou parcerias institucionais.</p><p>Entre em contato com a equipe para conhecer as necessidades atuais e combinar a melhor forma de ajudar.</p><a class="btn btn-dark" href="#inicio">Voltar ao início ↑</a></div>
  <div class="partner-options"><div class="partner-option"><strong>Materiais e uniformes</strong><span>Equipamentos e itens para as atividades.</span></div><div class="partner-option"><strong>Voluntariado</strong><span>Tempo, conhecimento e serviços.</span></div><div class="partner-option"><strong>Parceria empresarial</strong><span>Apoio institucional e colaboração contínua.</span></div><div class="partner-option"><strong>Ações comunitárias</strong><span>Participação em campanhas e eventos.</span></div></div>
 </div>
@@ -235,8 +283,15 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
   <div class="section-head"><div><p class="kicker">INSCRIÇÃO DIGITAL</p><h2>Matricule seu filho no <em style="color:#b88e29;font-style:normal">Projeto Sementes.</em></h2></div><p>Preencha uma ficha individual para cada criança. Os dados de saúde e os documentos são enviados de forma privada para a equipe responsável.</p></div>
   <div class="enrollment-card">
    <div class="enrollment-intro"><p class="enroll-note">Todos os campos marcados com * são obrigatórios. O e-mail é opcional. A autorização de imagem e a autorização de biometria são independentes e opcionais; a recusa não impede a participação.</p></div>
+   <div class="enrollment-wizard" id="enrollmentWizard" aria-label="Etapas da matrícula">
+    <div class="enrollment-wizard-step active" data-wizard-indicator="1"><span>1</span><b class="enrollment-wizard-label">Aluno</b></div>
+    <div class="enrollment-wizard-step" data-wizard-indicator="2"><span>2</span><b class="enrollment-wizard-label">Responsável</b></div>
+    <div class="enrollment-wizard-step" data-wizard-indicator="3"><span>3</span><b class="enrollment-wizard-label">Saúde</b></div>
+    <div class="enrollment-wizard-step" data-wizard-indicator="4"><span>4</span><b class="enrollment-wizard-label">Autorizações</b></div>
+    <div class="enrollment-wizard-step" data-wizard-indicator="5"><span>5</span><b class="enrollment-wizard-label">Assinatura</b></div>
+   </div>
    <form id="digitalEnrollmentForm" class="enrollment-form">
-    <fieldset class="enroll-group"><legend>1. Identificação do(a) aluno(a) — menor</legend>
+    <fieldset class="enroll-group" data-wizard-step="1"><legend>1. Identificação do(a) aluno(a) — menor</legend>
      <div class="enroll-grid">
       <div class="enroll-field full"><label for="enStudentName">Nome completo *</label><input id="enStudentName" required maxlength="180" autocomplete="name"></div>
       <div class="enroll-field"><label for="enBirthDate">Data de nascimento *</label><input id="enBirthDate" type="date" required></div>
@@ -249,7 +304,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
       <div class="enroll-field full"><label for="enAddress">Endereço completo (rua, número e complemento) *</label><input id="enAddress" required maxlength="500" autocomplete="street-address"></div>
      </div>
     </fieldset>
-    <fieldset class="enroll-group"><legend>2. Identificação do responsável legal</legend>
+    <fieldset class="enroll-group" data-wizard-step="2"><legend>2. Identificação do responsável legal</legend>
      <div class="enroll-grid">
       <div class="enroll-field full"><label for="enGuardianName">Nome completo do responsável *</label><input id="enGuardianName" required maxlength="180" autocomplete="name"></div>
       <div class="enroll-field"><label for="enGuardianDocument">CIN/RG *</label><input id="enGuardianDocument" required maxlength="30" autocomplete="off"></div>
@@ -258,11 +313,11 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
       <div class="enroll-field"><label for="enRelationship">Parentesco / vínculo *</label><select id="enRelationship" required><option value="">Selecione</option><option>Mãe</option><option>Pai</option><option>Avó</option><option>Avô</option><option>Tutor(a) legal</option><option>Outro responsável legal</option></select></div>
      </div>
     </fieldset>
-    <fieldset class="enroll-group"><legend>3. Autorização e ciência</legend>
+    <fieldset class="enroll-group" data-wizard-step="4"><legend>3. Autorização e ciência</legend>
      <p class="enroll-note">Ao enviar, o responsável declara que autoriza a participação gratuita do(a) menor nas atividades de Jiu-Jitsu do Projeto Social Sementes e que comunicará à coordenação qualquer condição de saúde ou limitação que possa interferir na participação.</p>
      <label class="enroll-choice"><input id="enParticipation" type="checkbox" required> Li e aceito o termo de participação e responsabilidade. *</label>
     </fieldset>
-    <fieldset class="enroll-group"><legend>4. Declaração de saúde</legend>
+    <fieldset class="enroll-group" data-wizard-step="3"><legend>4. Declaração de saúde</legend>
      <p class="enroll-note">Assinale uma opção em cada item. Se responder “Sim”, descreva a informação no campo de especificações. Uma resposta “Não” significa declaração expressa do responsável; não deixe perguntas sem resposta.</p>
      <div class="enroll-grid">
       <div class="enroll-field"><span class="enroll-label">Problema cardíaco / pressão *</span><div class="enroll-choice"><label><input type="radio" name="health_cardiaco_pressao" value="Sim" required> Sim</label><label><input type="radio" name="health_cardiaco_pressao" value="Não"> Não</label></div></div>
@@ -274,33 +329,40 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
       <div class="enroll-field full"><label for="enHealthDetails">Se SIM ou NÃO, especifique / outras informações de saúde *</label><textarea id="enHealthDetails" required maxlength="2000" placeholder="Descreva exatamente as informações que deseja declarar. Se não houver especificações, escreva: Não."></textarea></div>
      </div>
     </fieldset>
-    <fieldset class="enroll-group"><legend>5. Segurança, responsabilidade e atendimento</legend>
+    <fieldset class="enroll-group" data-wizard-step="3"><legend>5. Segurança, responsabilidade e atendimento</legend>
      <p class="enroll-note">O responsável declara que as informações prestadas são verdadeiras, compromete-se a comunicar alterações de saúde e autoriza a equipe a prestar os primeiros cuidados e, em situação de urgência ou emergência, acionar serviço especializado e/ou SAMU, quando necessário.</p>
      <div class="enroll-grid">
       <div class="enroll-field"><label for="enEmergencyName">Nome do contato de emergência *</label><input id="enEmergencyName" required maxlength="180"></div>
       <div class="enroll-field"><label for="enEmergencyPhone">Telefone do contato de emergência *</label><input id="enEmergencyPhone" type="tel" required maxlength="30"></div>
      </div>
     </fieldset>
-    <fieldset class="enroll-group"><legend>6. Uso de imagem, voz e nome</legend>
+    <fieldset class="enroll-group" data-wizard-step="4"><legend>6. Uso de imagem, voz e nome</legend>
      <p class="enroll-note">Autorização opcional para captação e utilização gratuita de imagem, voz e nome do(a) menor em registros e divulgação institucional do Projeto, sem finalidade comercial.</p>
      <div class="enroll-choice"><label><input type="radio" name="enImageConsent" value="true" required> Autorizo</label><label><input type="radio" name="enImageConsent" value="false"> Não autorizo</label></div>
     </fieldset>
-    <fieldset class="enroll-group"><legend>7. Dados pessoais e comunicação</legend>
+    <fieldset class="enroll-group" data-wizard-step="4"><legend>7. Dados pessoais e comunicação</legend>
      <p class="enroll-note">Os dados serão tratados na medida necessária à inscrição, organização das atividades, contato com o responsável, segurança do aluno e cumprimento de obrigações legais. Dados de saúde serão mantidos em área restrita.</p>
      <label class="en-choice"><input id="enPrivacy" type="checkbox" required> Li e estou ciente do aviso de privacidade e do tratamento dos dados para os fins informados. *</label>
     </fieldset>
-    <fieldset class="enroll-group"><legend>8. Biometria facial — autorização independente</legend>
+    <fieldset class="enroll-group" data-wizard-step="4"><legend>8. Biometria facial — autorização independente</legend>
      <p class="enroll-note">A biometria facial é opcional e não é condição para participar do Projeto.</p>
      <div class="enroll-choice"><label><input type="radio" name="enBiometricConsent" value="true" required> Autorizo</label><label><input type="radio" name="enBiometricConsent" value="false"> Não autorizo</label></div>
     </fieldset>
-    <fieldset class="enroll-group"><legend>9. Assinatura digital do responsável</legend>
+    <fieldset class="enroll-group" data-wizard-step="5"><legend>9. Assinatura digital do responsável</legend>
      <p class="enroll-note">Assine no espaço abaixo usando o dedo, caneta digital ou mouse. A assinatura deve ser feita pelo responsável legal identificado acima.</p>
      <div class="signature-wrap"><canvas id="guardianSignature" aria-label="Área para assinatura digital"></canvas><div class="signature-actions"><button class="btn" id="clearGuardianSignature" type="button" style="background:#f3f4f6;color:#344054;border-color:#d0d5dd">Limpar assinatura</button></div></div>
      <div class="enroll-field" style="margin-top:12px"><label for="enSignatureName">Nome completo para confirmação da assinatura *</label><input id="enSignatureName" required maxlength="180"></div>
     </fieldset>
-    <div class="enroll-field full"><span class="enroll-label">Verificação de segurança</span><div id="enrollmentTurnstile"></div><p class="enroll-note">Conclua a verificação de segurança para enviar a matrícula.</p></div>
-    <button class="btn btn-gold enrollment-submit" type="submit">Enviar matrícula digital →</button>
+    <fieldset class="enroll-group" data-wizard-step="5"><legend>Verificação e envio</legend>
+     <div class="enroll-field full"><span class="enroll-label">Verificação de segurança</span><div id="enrollmentTurnstile"></div><p class="enroll-note">Conclua a verificação de segurança para enviar a matrícula.</p></div>
+     <button class="btn btn-gold enrollment-submit" type="submit">Enviar matrícula digital →</button>
+    </fieldset>
     <div id="enrollmentResult" class="enrollment-result" role="status" aria-live="polite"></div>
+    <div class="wizard-controls" id="enrollmentWizardControls">
+     <button class="btn btn-outline" id="enrollmentPrev" type="button" disabled>← Voltar</button>
+     <span class="wizard-step-caption" id="wizardStepCaption">Etapa 1 de 5</span>
+     <button class="btn btn-gold" id="enrollmentNext" type="button">Próxima etapa →</button>
+    </div>
    </form>
   </div>
  </div>
@@ -310,7 +372,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
  <div class="footer-grid">
   <div><a class="brand footer-brand" href="#inicio"><img class="brand-mark brand-logo-secondary" src="logo_secundaria.png" alt="Logotipo secundário do Projeto Sementes"><span class="brand-copy"><small>PROJETO SOCIAL</small><strong>SEMENTES</strong><em>JIU-JITSU • CIDADANIA • FAMÍLIA</em></span></a><p>Plantando valores, formando cidadãos e transformando vidas.</p></div>
   <div><h3>NAVEGAÇÃO</h3><div class="footer-links"><a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Nosso impacto</a><a href="#familia">Família</a></div></div>
-  <div><h3>LOCALIZAÇÃO</h3><p>IEQ Guaicurus<br>Rua Edu Rocha, Bairro Popular Nova<br>Corumbá — Mato Grosso do Sul</p><a href="#parcerias">Apoie o Projeto →</a></div>
+  <div><h3>LOCALIZAÇÃO</h3><p>IEQ Guaicurus<br>Rua Edu Rocha, Bairro Popular Nova<br>Corumbá — Mato Grosso do Sul</p><a href="#parceria">Apoie o Projeto →</a></div>
  </div>
  <div class="footer-bottom"><span>© 2026 Projeto Sementes. Todos os direitos reservados.</span><span>Site institucional · Prévia de redesign</span></div>
 </div></footer>
@@ -526,6 +588,7 @@ $('resetBtn').addEventListener('click',async()=>{
    if(old){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,rect.width,180);img.src=old;}
  }
  resizeSignature();window.addEventListener('resize',resizeSignature);
+ document.addEventListener('enrollment:signature-visible',()=>requestAnimationFrame(()=>requestAnimationFrame(resizeSignature)));
  function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
  canvas.addEventListener('pointerdown',e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
  canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;});
@@ -577,7 +640,7 @@ $('resetBtn').addEventListener('click',async()=>{
   }catch(err){showEnrollmentResult(err.message||'Falha ao enviar a matrícula. Tente novamente mais tarde.', 'error');}
   finally{submit.disabled=false;submit.textContent='Enviar matrícula digital →';}
  });
- if(TURNSTILE_SITE_KEY!=='0x4AAAAAAFswPZX9oVKHZCXu'){
+ if(TURNSTILE_SITE_KEY && !TURNSTILE_SITE_KEY.includes('INSERIR_CHAVE_PUBLICA_TURNSTILE')){
   const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;script.defer=true;
   script.onload=()=>{window.__enrollmentTurnstileWidget=window.turnstile.render('#enrollmentTurnstile',{sitekey:TURNSTILE_SITE_KEY});};
   document.head.append(script);
@@ -585,15 +648,6 @@ $('resetBtn').addEventListener('click',async()=>{
 })();
 
 
-// Exibe os formulários somente quando o visitante solicitar.
-document.querySelectorAll('a[href="#matricula"]').forEach(link=>link.addEventListener('click',()=>{
- const section=document.getElementById('matricula');
- if(section)section.classList.add('is-open');
-}));
-document.querySelectorAll('a[href="#contato"]').forEach(link=>link.addEventListener('click',()=>{
- const formCard=document.querySelector('.partner-contact');
- if(formCard)formCard.classList.add('is-open');
-}));
 // Formulário de parceria: prepara e-mail para envio pelo aplicativo do visitante.
 const partnerForm=document.getElementById('partnerForm');
 if(partnerForm){
@@ -627,6 +681,73 @@ if(partnerForm){
   partnerForm.reset();
  });
 }
+</script>
+
+
+<script>
+// Navegação em telas exclusivas: página inicial, parceria e matrícula.
+(function(){
+ const body=document.body;
+ function showView(view){
+  body.classList.remove('home-view','partner-view','enrollment-view','standalone-view');
+  if(view==='partner'){body.classList.add('partner-view','standalone-view');}
+  else if(view==='enrollment'){body.classList.add('enrollment-view','standalone-view');}
+  else body.classList.add('home-view');
+  const nav=document.getElementById('mainNav');if(nav)nav.classList.remove('open');
+  const toggle=document.getElementById('menuToggle');if(toggle)toggle.setAttribute('aria-expanded','false');
+  window.scrollTo({top:0,behavior:'instant'});
+ }
+ function route(){const h=location.hash.toLowerCase();if(h==='#matricula')showView('enrollment');else if(h==='#parceria'||h==='#parcerias'||h==='#contato')showView('partner');else showView('home');}
+ document.addEventListener('click',e=>{
+  const a=e.target.closest('a[href^="#"]');if(!a)return;
+  const h=a.getAttribute('href').toLowerCase();
+  if(h==='#matricula'||h==='#parceria'||h==='#parcerias'||h==='#contato'||h==='#inicio'){
+   if(h==='#parcerias'||h==='#contato') {e.preventDefault();history.pushState(null,'','#parceria');route();}
+   else if(h==='#parceria'){e.preventDefault();history.pushState(null,'','#parceria');route();}
+   else if(h==='#matricula'){e.preventDefault();history.pushState(null,'','#matricula');route();}
+   else if(h==='#inicio'&&body.classList.contains('standalone-view')){e.preventDefault();history.pushState(null,'','#inicio');route();}
+  }
+ });
+ window.addEventListener('hashchange',route);window.addEventListener('popstate',route);
+ route();
+})();
+
+// Matrícula em cinco etapas; os campos e validações originais são preservados.
+(function(){
+ const form=document.getElementById('digitalEnrollmentForm');if(!form)return;
+ const groups=[...form.querySelectorAll('fieldset[data-wizard-step]')];
+ const indicators=[...document.querySelectorAll('[data-wizard-indicator]')];
+ const prev=document.getElementById('enrollmentPrev'),next=document.getElementById('enrollmentNext'),caption=document.getElementById('wizardStepCaption');
+ let step=1;const total=5;
+ function render(){
+  groups.forEach(g=>g.classList.toggle('wizard-active',Number(g.dataset.wizardStep)===step));
+  indicators.forEach(i=>{const n=Number(i.dataset.wizardIndicator);i.classList.toggle('active',n===step);i.classList.toggle('done',n<step);});
+  prev.disabled=step===1;next.textContent=step===total?'Revisar e concluir →':'Próxima etapa →';caption.textContent='Etapa '+step+' de '+total;
+  if(step===5)document.dispatchEvent(new Event('enrollment:signature-visible'));
+ }
+ function validateStep(n){
+  const fields=groups.filter(g=>Number(g.dataset.wizardStep)===n).flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).filter(el=>el.willValidate);
+  for(const el of fields){if(!el.checkValidity()){el.reportValidity();el.focus({preventScroll:true});return false;}}
+  return true;
+ }
+ next.addEventListener('click',()=>{
+  if(!validateStep(step))return;
+  if(step<total){step++;render();document.getElementById('matricula').scrollIntoView({behavior:'smooth',block:'start'});}
+  else {
+   const invalid=groups.flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).find(el=>el.willValidate&&!el.checkValidity());
+   if(invalid){step=Number(invalid.closest('fieldset').dataset.wizardStep);render();invalid.reportValidity();invalid.focus({preventScroll:true});return;}
+   const sig=document.getElementById('guardianSignature');
+   if(sig)sig.scrollIntoView({behavior:'smooth',block:'center'});
+   const submit=form.querySelector('button[type="submit"]');if(submit)submit.focus({preventScroll:true});
+  }
+ });
+ prev.addEventListener('click',()=>{if(step>1){step--;render();document.getElementById('matricula').scrollIntoView({behavior:'smooth',block:'start'});}});
+ form.addEventListener('submit',e=>{
+  const invalid=groups.flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).find(el=>el.willValidate&&!el.checkValidity());
+  if(invalid){e.preventDefault();step=Number(invalid.closest('fieldset').dataset.wizardStep);render();invalid.reportValidity();invalid.focus({preventScroll:true});}
+ });
+ render();
+})();
 </script>
 
 </body>
