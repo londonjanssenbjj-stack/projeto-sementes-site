@@ -121,7 +121,15 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
  </div>
  <div class="footer-bottom"><span>© 2026 Projeto Sementes. Todos os direitos reservados.</span><span>Site institucional · Prévia de redesign</span></div>
 </div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* Conexão Supabase do projeto existente — manter a chave publicável no frontend. */
+const SUPABASE_URL='https://mmycsmautsnelllrilka.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_4kQJZLN0ROE-z6TnmqffQQ_QfXDUD9G';
+const supabaseClient=(window.supabase && SUPABASE_URL.startsWith('https://') && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_'))
+  ? window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)
+  : null;
+
 const toggle=document.getElementById('menuToggle'),nav=document.getElementById('mainNav');
 toggle.addEventListener('click',()=>{const open=nav.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?'✕ Fechar':'☰ Menu'});
 nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');toggle.setAttribute('aria-expanded','false');toggle.textContent='☰ Menu'}));
