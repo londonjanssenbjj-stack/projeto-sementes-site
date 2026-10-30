@@ -415,9 +415,12 @@ if(partnerForm){
    '',
    'Mensagem:',
    value('partnerMessage')
-  ].join('\\n');
+  ].join('\n');
   const mailto='mailto:londonjanssenbjj@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  // Abre o aplicativo de e-mail com quebras de linha reais no corpo da mensagem.
   window.location.href=mailto;
+  // Limpa o formulário após preparar e abrir a mensagem; o envio é confirmado no aplicativo de e-mail.
+  partnerForm.reset();
  });
 }
 </script>
