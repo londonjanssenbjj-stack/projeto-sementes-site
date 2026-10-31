@@ -33,7 +33,7 @@ section.block{padding:86px 0}.section-dark{background:var(--navy);color:#fff}.se
 footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:42px}.footer-brand{margin-bottom:14px}.footer-grid h3{color:var(--gold2);font-size:11px;letter-spacing:1.2px}.footer-grid p,.footer-grid a{font-size:12px;line-height:1.8;color:#c6ced9}.footer-links{display:grid;gap:8px}.footer-bottom{border-top:1px solid #273247;margin-top:30px;padding-top:18px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;color:#8996a8;font-size:10px}
 .notice{font-size:11px;color:#707782;margin-top:20px}
 @media(max-width:1050px){nav{gap:13px}nav a{font-size:11px}.impact-grid{grid-template-columns:1fr 1fr 1fr}.impact-desc{border:0}.impact-intro{grid-column:span 1}.metric{padding:12px;border-left:1px solid #c7c0b0}.section-head{gap:28px}}
-@media(max-width:800px){.wrap{width:min(100% - 32px,var(--max))}.navbar{min-height:70px;flex-wrap:wrap;padding:10px 0}.menu-toggle{display:block}.navbar nav{display:none;order:4;width:100%;padding:10px 0 6px;flex-direction:column;align-items:flex-start;gap:0}.navbar nav.open{display:flex}.navbar nav a{padding:11px 0;width:100%;border-top:1px solid #263348}.actions .btn-outline{display:none}.brand{min-width:0}.hero{min-height:590px}.hero-inner{padding:70px 0}.hero:before{background:linear-gradient(90deg,rgba(5,13,24,.95),rgba(5,13,24,.76)),url('Professor_e_Aluno_no_Jiu-Jitsu.png') center/cover}.impact-grid{grid-template-columns:1fr 1fr;gap:12px}.impact-intro,.impact-desc{grid-column:1/-1}.impact-desc{padding:0}.metric{padding:10px 0 10px 12px}.section-head,.story,.family-grid,.partner-grid{grid-template-columns:1fr;gap:24px}.program-grid{grid-template-columns:repeat(2,1fr)}.story-photo,.family-photo{min-height:300px}.gallery{grid-template-columns:1fr 1fr;grid-template-rows:160px 160px 160px}.gallery div:first-child{grid-row:auto;grid-column:span 2}.cta-inner{align-items:flex-start;flex-direction:column}.footer-grid{grid-template-columns:1fr 1fr}.footer-grid>div:first-child{grid-column:1/-1}}
+@media(max-width:800px){.wrap{width:min(100% - 32px,var(--max))}.navbar{min-height:70px;flex-wrap:wrap;padding:10px 0}.menu-toggle{display:block}.navbar nav{display:none;order:4;width:100%;padding:10px 0 6px;flex-direction:column;align-items:flex-start;gap:0}.navbar nav.open{display:flex}.navbar nav a{padding:11px 0;width:100%;border-top:1px solid #263348}.actions .btn-outline{display:none} .actions #openTeamLogin{display:inline-flex}.actions #openGuardianLogin{display:inline-flex}.actions{gap:6px}.actions .btn{padding:9px 10px;font-size:10px}.brand{min-width:0}.hero{min-height:590px}.hero-inner{padding:70px 0}.hero:before{background:linear-gradient(90deg,rgba(5,13,24,.95),rgba(5,13,24,.76)),url('Professor_e_Aluno_no_Jiu-Jitsu.png') center/cover}.impact-grid{grid-template-columns:1fr 1fr;gap:12px}.impact-intro,.impact-desc{grid-column:1/-1}.impact-desc{padding:0}.metric{padding:10px 0 10px 12px}.section-head,.story,.family-grid,.partner-grid{grid-template-columns:1fr;gap:24px}.program-grid{grid-template-columns:repeat(2,1fr)}.story-photo,.family-photo{min-height:300px}.gallery{grid-template-columns:1fr 1fr;grid-template-rows:160px 160px 160px}.gallery div:first-child{grid-row:auto;grid-column:span 2}.cta-inner{align-items:flex-start;flex-direction:column}.footer-grid{grid-template-columns:1fr 1fr}.footer-grid>div:first-child{grid-column:1/-1}}
 @media(max-width:520px){.wrap{width:calc(100% - 28px)}.brand-mark{width:35px;height:40px}.brand-copy strong{font-size:19px}.brand-copy em{font-size:8px}.actions .btn{padding:10px 11px;font-size:10px}.hero{min-height:570px}.hero-inner{padding:58px 0}.eyebrow{font-size:9px;letter-spacing:1.5px}h1{font-size:43px;letter-spacing:-1.9px}.hero-copy{font-size:15px}.hero-buttons .btn{width:100%}.hero-note{gap:10px;font-size:9px}.impact-intro{font-size:23px}.metric strong{font-size:24px}section.block{padding:60px 0}.section-head{margin-bottom:25px}h2{font-size:32px}.program-grid{grid-template-columns:1fr}.program-img{height:185px}.family-points{grid-template-columns:1fr 1fr}.gallery{gap:8px;grid-template-rows:130px 130px 130px}.partner-options{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr}.footer-grid>div:first-child{grid-column:auto}.footer-bottom{font-size:9px}}
 
 /* Logotipos oficiais do Projeto Sementes */
@@ -161,7 +161,7 @@ body.home-view #matricula{display:none!important}
 body.standalone-view #screenBack{display:inline-flex}
 body.standalone-view #mainNav{display:none}
 body.standalone-view #publicFooter{display:none!important}
-body.standalone-view .actions #openLogin{display:none}
+body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #openTeamLogin{display:none}
 .standalone-heading{max-width:760px;margin:0 auto 28px;text-align:center}
 .standalone-heading .kicker{margin-bottom:12px}
 .standalone-heading h2{font:800 clamp(30px,4vw,46px)/1.08 Manrope,sans-serif;color:var(--navy);letter-spacing:-1.4px;margin:0 0 12px}
@@ -207,7 +207,7 @@ body.standalone-view .actions #openLogin{display:none}
   <nav id="mainNav" aria-label="Navegação principal">
    <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parceria">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
-  <div class="actions"><a class="btn btn-outline" href="#familia" id="openLogin" aria-label="Abrir acesso seguro da família e equipe">Área da Família</a></div>
+  <div class="actions"><button class="btn btn-gold" id="openGuardianLogin" type="button" aria-label="Acessar Portal do Responsável">Portal do Responsável</button><button class="btn btn-outline" id="openTeamLogin" type="button" aria-label="Acessar painel da equipe">Acesso da Equipe</button></div>
  </div>
 </header>
 <main id="publicSite">
@@ -257,7 +257,7 @@ body.standalone-view .actions #openLogin{display:none}
  <div class="gallery"><img src="Festa_Infantil_Comunitaria.png" alt="Festa infantil comunitária" loading="lazy"><img src="Culto_Noturno_Igreja.png" alt="Culto noturno na igreja" loading="lazy"><img src="Aula_Jiu_Jitsu_Dojo.png" alt="Aula de Jiu-Jitsu no dojo" loading="lazy"><img src="Lutando_Jiu_Jitsu.jpeg" alt="Prática de Jiu-Jitsu" loading="lazy"><img src="TTreino_Jiu_Jitsu_Academia.png" alt="Treino de Jiu-Jitsu infantil" loading="lazy"><img src="Treino_Jiu_Jitsu_Infantil.png" alt="Treino de Jiu-Jitsu na academia" loading="lazy"><img src="Turma_Jiu_Jitsu_Dojo.png" alt="Turma de Jiu-Jitsu do Projeto Sementes" loading="lazy"></div>
  <p class="notice">Prévia visual: fotografias ilustrativas. Antes da publicação, utilize imagens reais do projeto com autorização adequada dos responsáveis.</p>
 </div></section>
-<section class="cta" id="parcerias"><div class="wrap cta-inner"><div><h2>Ajude a cultivar oportunidades.</h2><p>Empresas, voluntários e apoiadores podem fazer parte dessa missão.</p></div><a class="btn" href="#parceria">Quero ser parceiro <span>→</span></a></div></section>
+<section class="cta" id="parcerias"><div class="wrap cta-inner"><div><h2>Ajude a cultivar oportunidades.</h2><p>Empresas, voluntários e apoiadores podem fazer parte dessa missão.</p></div></div></section>
 <section class="block" id="contato"><div class="wrap standalone-heading"><p class="kicker">CONEXÃO E COLABORAÇÃO</p><h2>Seja parceiro do <em style="color:#b88e29;font-style:normal">Projeto Sementes.</em></h2><p>Uma tela exclusiva para empresas, voluntários e apoiadores apresentarem como desejam contribuir com nossa missão.</p></div><div class="wrap partner-grid">
  <div class="partner-copy"><p class="kicker">COMO PARTICIPAR</p><h2>Há muitas formas de <em style="color:#b88e29;font-style:normal">fazer a diferença.</em></h2><p>Você pode contribuir com materiais esportivos, uniformes, serviços voluntários, apoio a palestras, ações sociais ou parcerias institucionais.</p><p>Entre em contato com a equipe para conhecer as necessidades atuais e combinar a melhor forma de ajudar.</p><a class="btn btn-dark" href="#inicio">Voltar ao início ↑</a></div>
  <div class="partner-options"><div class="partner-option"><strong>Materiais e uniformes</strong><span>Equipamentos e itens para as atividades.</span></div><div class="partner-option"><strong>Voluntariado</strong><span>Tempo, conhecimento e serviços.</span></div><div class="partner-option"><strong>Parceria empresarial</strong><span>Apoio institucional e colaboração contínua.</span></div><div class="partner-option"><strong>Ações comunitárias</strong><span>Participação em campanhas e eventos.</span></div></div>
@@ -376,7 +376,7 @@ body.standalone-view .actions #openLogin{display:none}
  <div class="footer-bottom"><span>© 2026 Projeto Sementes. Todos os direitos reservados.</span><span>Site institucional · Prévia de redesign</span></div>
 </div></footer>
 
-<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button">✕</button><h2 id="loginTitle">Acesso da equipe</h2><p>Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form><div class="message" id="loginMessage" role="status"></div><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
+<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button">✕</button><h2 id="loginTitle">Acesso da equipe</h2><p id="loginIntro">Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form><div class="message" id="loginMessage" role="status"></div><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
 
 <section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="atividades" type="button">Atividades</button></div><div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
 
@@ -404,13 +404,21 @@ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_4kQJZLN0ROE-z6TnmqffQQ_QfXDUD9G';
 const supabaseClient=(window.supabase&&SUPABASE_URL.startsWith('https://')&&SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_'))?window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY):null;
 const $=id=>document.getElementById(id);
 const modal=$('loginModal'), message=$('loginMessage'), form=$('loginForm'), signInBtn=$('signInBtn');
-let currentProfile=null, studentsCache=[];
+let currentProfile=null, studentsCache=[], loginMode='team';
 const yearNode=$('year');if(yearNode)yearNode.textContent=new Date().getFullYear();
-function openModal(){modal.classList.add('open');message.className='message';}
+function openModal(mode='team'){
+  loginMode=mode;
+  $('loginTitle').textContent=mode==='guardian'?'Portal do Responsável':'Acesso da Equipe';
+  $('loginIntro').textContent=mode==='guardian'
+    ?'Entre com o e-mail e a senha da sua conta de responsável.'
+    :'Entre com o e-mail e a senha cadastrados para a equipe do projeto.';
+  $('email').value='';$('password').value='';
+  modal.classList.add('open');message.className='message';
+}
 function closeModal(){modal.classList.remove('open');}
 function showMessage(text,kind){message.textContent=text;message.className='message show '+kind;}
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-$('openLogin').addEventListener('click',openModal);$('closeLogin').addEventListener('click',closeModal);
+$('openGuardianLogin').addEventListener('click',()=>openModal('guardian'));$('openTeamLogin').addEventListener('click',()=>openModal('team'));$('closeLogin').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 function setPrivateMode(on){$('publicHeader').style.display=on?'none':'';$('publicSite').style.display=on?'none':'';$('publicFooter').style.display=on?'none':'';$('dashboard').classList.toggle('show',on);if(on)window.scrollTo(0,0);}
 function niceRole(role){return ({admin:'Administrador',teacher:'Professor',guardian:'Responsável'})[role]||role||'Usuário';}
@@ -577,6 +585,13 @@ form.addEventListener('submit',async e=>{
   try{
     const {error}=await supabaseClient.auth.signInWithPassword({email,password});
     if(error)throw error;
+    const {data:{user},error:userError}=await supabaseClient.auth.getUser();
+    if(userError||!user)throw new Error('Não foi possível confirmar a sessão autenticada.');
+    const profile=await getProfile(user);
+    const allowed=loginMode==='guardian'?profile.role==='guardian':['admin','teacher'].includes(profile.role);
+    if(!allowed)throw new Error(loginMode==='guardian'
+      ?'Esta conta não possui perfil de responsável. Utilize o Acesso da Equipe, se for membro da equipe.'
+      :'Esta conta não possui perfil de Administrador ou Professor. Utilize o Portal do Responsável, se for responsável por aluno.');
     await loadDashboard();closeModal();
   }catch(err){
     await supabaseClient.auth.signOut().catch(()=>{});
