@@ -331,7 +331,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
     <fieldset class="enroll-group" data-wizard-step="2"><legend>2. Identificação do responsável legal</legend>
      <div class="enroll-grid">
       <div class="enroll-field full"><label for="enGuardianName">Nome completo do responsável *</label><input id="enGuardianName" required maxlength="180" autocomplete="name"></div>
-      <div class="enroll-field"><label for="enGuardianDocument">CPF do responsável *</label><input id="enGuardianDocument" required maxlength="14" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" pattern="[0-9.\-]{11,14}"></div>
+      <div class="enroll-field"><label for="enGuardianDocumentType">Tipo de documento *</label><select id="enGuardianDocumentType" required><option value="">Selecione</option><option value="CIN">CIN</option><option value="RG">RG</option></select></div><div class="enroll-field"><label for="enGuardianDocument">Número do documento *</label><input id="enGuardianDocument" required maxlength="30" inputmode="text" autocomplete="off" placeholder="Digite o número da CIN ou RG"></div>
       <div class="enroll-field"><label for="enGuardianPhone">Telefone / WhatsApp *</label><input id="enGuardianPhone" type="tel" required maxlength="30" autocomplete="tel"></div>
       <div class="enroll-field"><label for="enGuardianEmail">E-mail (opcional)</label><input id="enGuardianEmail" type="email" maxlength="180" autocomplete="email"></div>
       <div class="enroll-field"><label for="enRelationship">Parentesco / vínculo *</label><select id="enRelationship" required><option value="">Selecione</option><option>Mãe</option><option>Pai</option><option>Avó</option><option>Avô</option><option>Tutor(a) legal</option><option>Outro responsável legal</option></select></div>
@@ -400,17 +400,16 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  <div class="footer-bottom"><span>© 2026 Projeto Sementes. Todos os direitos reservados.</span><span>Site institucional · Prévia de redesign</span></div>
 </div></footer>
 
-<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button">✕</button><h2 id="loginTitle">Acesso da equipe</h2><p id="loginIntro">Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form>
+<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button">✕</button><h2 id="loginTitle">Acesso da equipe</h2><p id="loginIntro">Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email" id="loginIdentifierLabel">E-mail</label><input id="email" type="text" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form>
 <div id="guardianRegister" class="guardian-register" aria-live="polite">
  <h3 style="margin:0 0 8px;color:#172131">Criar acesso do responsável</h3>
- <p class="notice">Disponível para matrículas digitais com protocolo. Use os mesmos dados informados na ficha. Alunos antigos importados da planilha precisam de validação presencial pela Secretaria.</p>
+ <p class="notice">Disponível para matrículas digitais com documento registrado. Informe CIN ou RG, nome e celular exatamente como constam na ficha. Cadastros antigos importados da planilha não possuem documento no banco e precisam de validação presencial pela Secretaria.</p>
  <form id="guardianRegisterForm">
   <div class="guardian-register-grid">
-   <div class="field full"><label for="grProtocol">Protocolo da matrícula</label><input id="grProtocol" required maxlength="24" placeholder="PS-2026-XXXXXXXX" autocomplete="off"></div>
    <div class="field full"><label for="grName">Nome completo do responsável</label><input id="grName" required maxlength="180" autocomplete="name"></div>
-   <div class="field"><label for="grCpf">CPF informado na matrícula</label><input id="grCpf" required maxlength="14" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"></div>
+   <div class="field"><label for="grDocumentType">Tipo de documento</label><select id="grDocumentType" required><option value="">Selecione</option><option value="CIN">CIN</option><option value="RG">RG</option></select></div><div class="field"><label for="grDocumentNumber">Número da CIN ou RG</label><input id="grDocumentNumber" required maxlength="30" autocomplete="off" placeholder="Número do documento"></div>
    <div class="field"><label for="grPhone">Telefone informado na matrícula</label><input id="grPhone" required maxlength="20" inputmode="tel" autocomplete="tel"></div>
-   <div class="field full"><label for="grEmail">E-mail para entrar no Portal</label><input id="grEmail" type="email" required maxlength="254" autocomplete="email"></div>
+   <div class="field full"><label for="grEmail">E-mail (opcional)</label><input id="grEmail" type="email" maxlength="254" autocomplete="email" placeholder="Se tiver, informe seu e-mail"></div>
    <div class="field"><label for="grPassword">Criar senha</label><input id="grPassword" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></div>
    <div class="field"><label for="grPassword2">Confirmar senha</label><input id="grPassword2" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></div>
    <div class="field full"><div id="guardianTurnstile"></div></div>
@@ -452,8 +451,10 @@ const yearNode=$('year');if(yearNode)yearNode.textContent=new Date().getFullYear
 function openModal(mode='team'){
   loginMode=mode;
   $('loginTitle').textContent=mode==='guardian'?'Portal do Responsável':'Acesso da Equipe';
+  $('loginIdentifierLabel').textContent=mode==='guardian'?'Celular ou e-mail':'E-mail';
+  $('email').placeholder=mode==='guardian'?'(67) 99999-9999 ou seuemail@exemplo.com':'seuemail@exemplo.com';
   $('loginIntro').textContent=mode==='guardian'
-    ?'Entre com seu e-mail e senha. Se ainda não possui acesso, crie sua conta usando o protocolo da matrícula.'
+    ?'Entre com seu celular ou e-mail e senha. Para criar acesso, confirme seus dados cadastrados na matrícula.'
     :'Entre com o e-mail e a senha cadastrados para a equipe do projeto.';
   $('email').value='';$('password').value='';
   $('guardianRegister').classList.remove('open');
@@ -651,9 +652,15 @@ form.addEventListener('submit',async e=>{
   e.preventDefault();
   if(!supabaseClient){showMessage('Não foi possível inicializar a conexão. Confira a URL e a chave publicável do Supabase.','error');return;}
   signInBtn.disabled=true;signInBtn.textContent='Verificando…';
-  const email=$('email').value.trim(),password=$('password').value;
+  const identifier=$('email').value.trim(),password=$('password').value;
   try{
-    const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+    let credentials;
+    if(loginMode==='guardian' && !identifier.includes('@')){
+      let phone=identifier.replace(/\D/g,'');
+      if(phone.startsWith('55')) phone='+'+phone; else phone='+55'+phone;
+      credentials={phone,password};
+    } else { credentials={email:identifier.toLowerCase(),password}; }
+    const {error}=await supabaseClient.auth.signInWithPassword(credentials);
     if(error)throw error;
     const {data:{user},error:userError}=await supabaseClient.auth.getUser();
     if(userError||!user)throw new Error('Não foi possível confirmar a sessão autenticada.');
@@ -670,7 +677,7 @@ form.addEventListener('submit',async e=>{
 });
 $('resetBtn').addEventListener('click',async()=>{
   if(!supabaseClient){showMessage('Conexão com Supabase não inicializada.','error');return;}
-  const email=$('email').value.trim();if(!email){showMessage('Digite seu e-mail no campo acima para solicitar a recuperação.','error');return;}
+  const email=$('email').value.trim();if(!email || !email.includes('@')){showMessage('Para recuperar a senha, informe o e-mail cadastrado. Se sua conta usa somente celular, procure a Secretaria do Projeto.','error');return;}
   try{const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});if(error)throw error;showMessage('Se este e-mail estiver cadastrado, as instruções de recuperação serão enviadas conforme a configuração do Supabase.','ok');}
   catch(err){showMessage(err.message||'Não foi possível solicitar a recuperação.','error');}
 });
@@ -701,10 +708,10 @@ $('resetBtn').addEventListener('click',async()=>{
   const token=window.turnstile&&widget!==null?window.turnstile.getResponse(widget):'';
   const btn=$('guardianRegisterBtn');btn.disabled=true;btn.textContent='Validando…';
   try{
-   const response=await fetch(SUPABASE_URL+'/functions/v1/guardian-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'claim_enrollment',protocol:$('grProtocol').value.trim().toUpperCase(),guardian_name:$('grName').value.trim(),guardian_cpf:$('grCpf').value.trim(),guardian_phone:$('grPhone').value.trim(),email:$('grEmail').value.trim().toLowerCase(),password,turnstile_token:token})});
+   const response=await fetch(SUPABASE_URL+'/functions/v1/guardian-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'claim_enrollment',guardian_name:$('grName').value.trim(),guardian_document_type:$('grDocumentType').value,guardian_document_number:$('grDocumentNumber').value.trim(),guardian_phone:$('grPhone').value.trim(),email:$('grEmail').value.trim().toLowerCase(),password,turnstile_token:token})});
    const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Não foi possível criar o acesso.');
-   regMsg('Acesso criado. Agora entre com o e-mail e a senha cadastrados.','ok');
-   $('email').value=$('grEmail').value.trim().toLowerCase();$('password').value='';
+   regMsg('Acesso criado. Agora entre com seu celular ou e-mail e a senha criada.','ok');
+   $('email').value=$('grEmail').value.trim().toLowerCase() || $('grPhone').value.trim();$('password').value='';
    regForm.reset();if(window.turnstile&&widget!==null)window.turnstile.reset(widget);
    box.classList.remove('open');form.style.display='';$('resetBtn').style.display='';
   }catch(err){regMsg(err.message||'Falha ao criar acesso.','error');if(window.turnstile&&widget!==null)window.turnstile.reset(widget);}
@@ -771,7 +778,7 @@ $('resetBtn').addEventListener('click',async()=>{
   const neighborhoodValue=neighborhood.value==='Outro'?otherInput.value.trim():neighborhood.value;
   const payload={
    turnstile_token:turnstileToken(),
-   guardian:{full_name:guardianName,document:document.getElementById('enGuardianDocument').value.trim(),phone:document.getElementById('enGuardianPhone').value.trim(),email:document.getElementById('enGuardianEmail').value.trim(),relationship:document.getElementById('enRelationship').value},
+   guardian:{full_name:guardianName,document_type:document.getElementById('enGuardianDocumentType').value,document:document.getElementById('enGuardianDocument').value.trim(),phone:document.getElementById('enGuardianPhone').value.trim(),email:document.getElementById('enGuardianEmail').value.trim(),relationship:document.getElementById('enRelationship').value},
    student:{full_name:document.getElementById('enStudentName').value.trim(),birth_date:document.getElementById('enBirthDate').value,sex:document.getElementById('enSex').value,school:document.getElementById('enSchool').value.trim(),neighborhood:neighborhoodValue,address:document.getElementById('enAddress').value.trim()},
    health_answers:health,
    emergency_contact:{name:document.getElementById('enEmergencyName').value.trim(),phone:document.getElementById('enEmergencyPhone').value.trim()},
