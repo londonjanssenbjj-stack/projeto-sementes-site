@@ -426,12 +426,42 @@ async function loadDashboard(){
   if(userError||!user)throw new Error('Sessão não encontrada. Entre novamente.');
   currentProfile=await getProfile(user);
   $('profileInfo').textContent=(currentProfile.full_name||user.email)+' • '+niceRole(currentProfile.role)+' • '+user.email;
-  setPrivateMode(true);await renderView('inicio');
+  const guardian=currentProfile.role==='guardian';
+  $('dashNav').style.display=guardian?'none':'';
+  $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
+  setPrivateMode(true);await renderView(guardian?'familia':'inicio');
 }
 function makeKpi(label,value){const box=node('div',undefined,'kpi');box.append(node('strong',String(value)),node('span',label));return box;}
+async function renderGuardianFamily(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Acompanhamento familiar'),node('p','Aqui aparecem somente os alunos vinculados e autorizados para esta conta.'));
+  content.append(panel);
+  const {data:links,error:linkError}=await supabaseClient.from('student_guardians')
+    .select('student_id,relationship,is_primary,verified_at')
+    .eq('guardian_user_id',(await supabaseClient.auth.getUser()).data.user.id);
+  if(linkError){panel.append(node('p','Não foi possível consultar os vínculos familiares. O administrador precisa conferir as políticas RLS da tabela student_guardians. Detalhe: '+linkError.message,'status-line'));return;}
+  if(!links||!links.length){panel.append(node('p','Sua conta ainda não possui um aluno vinculado e confirmado. Solicite à Secretaria a conferência do cadastro.','status-line'));return;}
+  const ids=[...new Set(links.map(x=>x.student_id).filter(Boolean))];
+  const {data:children,error:childrenError}=await supabaseClient.from('students')
+    .select('id,full_name,birth_date,enrollment_date,belt').in('id',ids);
+  if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
+  if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
+  children.forEach(child=>{
+    const card=node('article',undefined,'dash-panel');
+    card.append(node('h3',child.full_name||'Aluno'));
+    const details=node('div',undefined,'kpis');
+    details.append(makeKpi('Data de nascimento',child.birth_date||'Não informado'),makeKpi('Data de matrícula',child.enrollment_date||'Não informado'),makeKpi('Faixa',child.belt||'Não informada'));
+    card.append(details);content.append(card);
+  });
+  panel.append(node('p','Para corrigir dados cadastrais ou solicitar informações, entre em contato com a Secretaria.','status-line'));
+}
 async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+  if(currentProfile&&currentProfile.role==='guardian'){
+    if(view!=='familia'){await renderGuardianFamily(content);return;}
+    await renderGuardianFamily(content);return;
+  }
   if(view==='inicio'){
     const panel=node('div',undefined,'dash-panel');panel.append(node('h2','Visão geral'),node('p','Resumo inicial do painel administrativo.'));
     const kpis=node('div',undefined,'kpis');kpis.append(makeKpi('Perfil autenticado',niceRole(currentProfile.role)),makeKpi('Status do acesso',currentProfile.is_active?'Ativo':'Inativo'),makeKpi('Banco de alunos','Clique em “Alunos” para consultar'));
