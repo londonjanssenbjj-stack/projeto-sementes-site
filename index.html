@@ -207,7 +207,7 @@ body.standalone-view .actions #openLogin{display:none}
   <nav id="mainNav" aria-label="Navegação principal">
    <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parceria">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
-  <div class="actions"><a class="btn btn-gold" href="#familia" id="openLogin" aria-label="Abrir Portal do Responsável">Portal do Responsável</a><a class="btn btn-outline" href="#familia" id="openTeamLogin" aria-label="Abrir acesso da equipe">Acesso da Equipe</a></div>
+  <div class="actions"><a class="btn btn-outline" href="#familia" id="openLogin" aria-label="Abrir acesso seguro da família e equipe">Área da Família</a></div>
  </div>
 </header>
 <main id="publicSite">
@@ -318,15 +318,15 @@ body.standalone-view .actions #openLogin{display:none}
      <label class="enroll-choice"><input id="enParticipation" type="checkbox" required> Li e aceito o termo de participação e responsabilidade. *</label>
     </fieldset>
     <fieldset class="enroll-group" data-wizard-step="3"><legend>4. Declaração de saúde</legend>
-     <p class="enroll-note">Assinale uma opção em cada item. Se responder “Sim”, descreva a informação no campo de especificações. Uma resposta “Não” significa declaração expressa do responsável; não deixe perguntas sem resposta.</p>
+     <p class="enroll-note">Informe “Sim” ou “Não” quando desejar declarar uma resposta. Se deixar um item em branco, ele será registrado como não informado, e não como “Não”. Se responder “Sim”, descreva a informação no campo de especificações.</p>
      <div class="enroll-grid">
-      <div class="enroll-field"><span class="enroll-label">Problema cardíaco / pressão *</span><div class="enroll-choice"><label><input type="radio" name="health_cardiaco_pressao" value="Sim" required> Sim</label><label><input type="radio" name="health_cardiaco_pressao" value="Não"> Não</label></div></div>
-      <div class="enroll-field"><span class="enroll-label">Asma / problema respiratório *</span><div class="enroll-choice"><label><input type="radio" name="health_asma_respiratorio" value="Sim" required> Sim</label><label><input type="radio" name="health_asma_respiratorio" value="Não"> Não</label></div></div>
-      <div class="enroll-field"><span class="enroll-label">Lesão óssea / muscular / articular *</span><div class="enroll-choice"><label><input type="radio" name="health_lesao_musculoesqueletica" value="Sim" required> Sim</label><label><input type="radio" name="health_lesao_musculoesqueletica" value="Não"> Não</label></div></div>
-      <div class="enroll-field"><span class="enroll-label">Uso contínuo de medicamento *</span><div class="enroll-choice"><label><input type="radio" name="health_medicamento_continuo" value="Sim" required> Sim</label><label><input type="radio" name="health_medicamento_continuo" value="Não"> Não</label></div></div>
-      <div class="enroll-field"><span class="enroll-label">Alergia *</span><div class="enroll-choice"><label><input type="radio" name="health_alergia" value="Sim" required> Sim</label><label><input type="radio" name="health_alergia" value="Não"> Não</label></div></div>
-      <div class="enroll-field"><span class="enroll-label">Desmaio / tontura durante exercício *</span><div class="enroll-choice"><label><input type="radio" name="health_desmaio_tontura" value="Sim" required> Sim</label><label><input type="radio" name="health_desmaio_tontura" value="Não"> Não</label></div></div>
-      <div class="enroll-field full"><label for="enHealthDetails">Se SIM ou NÃO, especifique / outras informações de saúde *</label><textarea id="enHealthDetails" required maxlength="2000" placeholder="Descreva exatamente as informações que deseja declarar. Se não houver especificações, escreva: Não."></textarea></div>
+      <div class="enroll-field"><span class="enroll-label">Problema cardíaco / pressão</span><div class="enroll-choice"><label><input type="radio" name="health_cardiaco_pressao" value="Sim"> Sim</label><label><input type="radio" name="health_cardiaco_pressao" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Asma / problema respiratório</span><div class="enroll-choice"><label><input type="radio" name="health_asma_respiratorio" value="Sim"> Sim</label><label><input type="radio" name="health_asma_respiratorio" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Lesão óssea / muscular / articular</span><div class="enroll-choice"><label><input type="radio" name="health_lesao_musculoesqueletica" value="Sim"> Sim</label><label><input type="radio" name="health_lesao_musculoesqueletica" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Uso contínuo de medicamento</span><div class="enroll-choice"><label><input type="radio" name="health_medicamento_continuo" value="Sim"> Sim</label><label><input type="radio" name="health_medicamento_continuo" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Alergia</span><div class="enroll-choice"><label><input type="radio" name="health_alergia" value="Sim"> Sim</label><label><input type="radio" name="health_alergia" value="Não"> Não</label></div></div>
+      <div class="enroll-field"><span class="enroll-label">Desmaio / tontura durante exercício</span><div class="enroll-choice"><label><input type="radio" name="health_desmaio_tontura" value="Sim"> Sim</label><label><input type="radio" name="health_desmaio_tontura" value="Não"> Não</label></div></div>
+      <div class="enroll-field full"><label for="enHealthDetails">Se desejar, especifique / outras informações de saúde</label><textarea id="enHealthDetails" maxlength="2000" placeholder="Descreva as informações que deseja declarar. Deixe em branco se não houver informação fornecida."></textarea></div>
      </div>
     </fieldset>
     <fieldset class="enroll-group" data-wizard-step="3"><legend>5. Segurança, responsabilidade e atendimento</legend>
@@ -406,11 +406,11 @@ const $=id=>document.getElementById(id);
 const modal=$('loginModal'), message=$('loginMessage'), form=$('loginForm'), signInBtn=$('signInBtn');
 let currentProfile=null, studentsCache=[];
 const yearNode=$('year');if(yearNode)yearNode.textContent=new Date().getFullYear();
-function openModal(mode='team'){const guardian=mode==='guardian';$('loginTitle').textContent=guardian?'Portal do Responsável':'Acesso da equipe';modal.querySelector('p').textContent=guardian?'Entre com o e-mail e a senha do seu acesso de responsável.':'Entre com o e-mail e a senha cadastrados no sistema do projeto.';modal.classList.add('open');message.className='message';}
+function openModal(){modal.classList.add('open');message.className='message';}
 function closeModal(){modal.classList.remove('open');}
 function showMessage(text,kind){message.textContent=text;message.className='message show '+kind;}
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-$('openLogin').addEventListener('click',()=>openModal('guardian'));$('openTeamLogin').addEventListener('click',()=>openModal('team'));$('closeLogin').addEventListener('click',closeModal);
+$('openLogin').addEventListener('click',openModal);$('closeLogin').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 function setPrivateMode(on){$('publicHeader').style.display=on?'none':'';$('publicSite').style.display=on?'none':'';$('publicFooter').style.display=on?'none':'';$('dashboard').classList.toggle('show',on);if(on)window.scrollTo(0,0);}
 function niceRole(role){return ({admin:'Administrador',teacher:'Professor',guardian:'Responsável'})[role]||role||'Usuário';}
@@ -428,7 +428,7 @@ async function loadDashboard(){
   $('profileInfo').textContent=(currentProfile.full_name||user.email)+' • '+niceRole(currentProfile.role)+' • '+user.email;
   const guardian=currentProfile.role==='guardian';
   $('dashNav').style.display=guardian?'none':'';
-  $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Portal do Responsável — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
+  $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
   setPrivateMode(true);await renderView(guardian?'familia':'inicio');
 }
 function makeKpi(label,value){const box=node('div',undefined,'kpi');box.append(node('strong',String(value)),node('span',label));return box;}
@@ -436,9 +436,11 @@ async function renderGuardianFamily(content){
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Acompanhamento familiar'),node('p','Aqui aparecem somente os alunos vinculados e autorizados para esta conta.'));
   content.append(panel);
+  const {data:{user:guardianUser},error:authError}=await supabaseClient.auth.getUser();
+  if(authError||!guardianUser){panel.append(node('p','Sessão do responsável não encontrada. Entre novamente.','status-line'));return;}
   const {data:links,error:linkError}=await supabaseClient.from('student_guardians')
     .select('student_id,relationship,is_primary,verified_at')
-    .eq('guardian_user_id',(await supabaseClient.auth.getUser()).data.user.id);
+    .eq('guardian_user_id',guardianUser.id);
   if(linkError){panel.append(node('p','Não foi possível consultar os vínculos familiares. O administrador precisa conferir as políticas RLS da tabela student_guardians. Detalhe: '+linkError.message,'status-line'));return;}
   if(!links||!links.length){panel.append(node('p','Sua conta ainda não possui um aluno vinculado e confirmado. Solicite à Secretaria a conferência do cadastro.','status-line'));return;}
   const ids=[...new Set(links.map(x=>x.student_id).filter(Boolean))];
@@ -621,7 +623,7 @@ $('resetBtn').addEventListener('click',async()=>{
  function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
  canvas.addEventListener('pointerdown',e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
  canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;});
- ['pointerup','pointercancel','pointerleave'].forEach(ev=>canvas.addEventListener(ev,()=>{drawing=false;}));
+ ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{drawing=false;}));
  document.getElementById('clearGuardianSignature').addEventListener('click',()=>{ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;});
  function radioValue(name){const selected=enrollmentForm.querySelector('input[name="'+name+'"]:checked');return selected?selected.value:null;}
  function turnstileToken(){const el=document.querySelector('[name="cf-turnstile-response"]');return el?el.value:'';}
@@ -744,7 +746,14 @@ if(partnerForm){
  const groups=[...form.querySelectorAll('fieldset[data-wizard-step]')];
  const indicators=[...document.querySelectorAll('[data-wizard-indicator]')];
  const prev=document.getElementById('enrollmentPrev'),next=document.getElementById('enrollmentNext'),caption=document.getElementById('wizardStepCaption');
+ if(!prev||!next||!caption||!groups.length)return;
  let step=1;const total=5;
+ function scrollToWizard(){
+  const target=document.getElementById('matricula');
+  if(!target)return;
+  const top=target.getBoundingClientRect().top+window.scrollY-92;
+  window.scrollTo({top:Math.max(0,top),behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+ }
 
  // Telefones brasileiros: aceita DDD + 8 ou 9 dígitos, com ou sem +55.
  const phoneFields=['enGuardianPhone','enEmergencyPhone'].map(id=>document.getElementById(id)).filter(Boolean);
@@ -786,9 +795,10 @@ if(partnerForm){
   }
   return true;
  }
+ next.type='button';prev.type='button';
  next.addEventListener('click',()=>{
   if(!validateStep(step))return;
-  if(step<total){step++;render();document.getElementById('matricula').scrollIntoView({behavior:'smooth',block:'start'});}
+  if(step<total){step++;render();requestAnimationFrame(scrollToWizard);}
   else {
    phoneFields.forEach(validatePhone);
   const invalid=groups.flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).find(el=>el.willValidate&&!el.checkValidity());
@@ -798,7 +808,7 @@ if(partnerForm){
    const submit=form.querySelector('button[type="submit"]');if(submit)submit.focus({preventScroll:true});
   }
  });
- prev.addEventListener('click',()=>{if(step>1){step--;render();document.getElementById('matricula').scrollIntoView({behavior:'smooth',block:'start'});}});
+ prev.addEventListener('click',()=>{if(step>1){step--;render();requestAnimationFrame(scrollToWizard);}});
  form.addEventListener('submit',e=>{
   phoneFields.forEach(validatePhone);
   const invalid=groups.flatMap(g=>[...g.querySelectorAll('input,select,textarea')]).find(el=>el.willValidate&&!el.checkValidity());
