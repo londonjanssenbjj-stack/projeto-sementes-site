@@ -207,7 +207,7 @@ body.standalone-view .actions #openLogin{display:none}
   <nav id="mainNav" aria-label="Navegação principal">
    <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parceria">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
-  <div class="actions"><a class="btn btn-outline" href="#familia" id="openLogin" aria-label="Abrir acesso seguro da família e equipe">Área da Família</a></div>
+  <div class="actions"><a class="btn btn-gold" href="#familia" id="openLogin" aria-label="Abrir Portal do Responsável">Portal do Responsável</a><a class="btn btn-outline" href="#familia" id="openTeamLogin" aria-label="Abrir acesso da equipe">Acesso da Equipe</a></div>
  </div>
 </header>
 <main id="publicSite">
@@ -406,11 +406,11 @@ const $=id=>document.getElementById(id);
 const modal=$('loginModal'), message=$('loginMessage'), form=$('loginForm'), signInBtn=$('signInBtn');
 let currentProfile=null, studentsCache=[];
 const yearNode=$('year');if(yearNode)yearNode.textContent=new Date().getFullYear();
-function openModal(){modal.classList.add('open');message.className='message';}
+function openModal(mode='team'){const guardian=mode==='guardian';$('loginTitle').textContent=guardian?'Portal do Responsável':'Acesso da equipe';modal.querySelector('p').textContent=guardian?'Entre com o e-mail e a senha do seu acesso de responsável.':'Entre com o e-mail e a senha cadastrados no sistema do projeto.';modal.classList.add('open');message.className='message';}
 function closeModal(){modal.classList.remove('open');}
 function showMessage(text,kind){message.textContent=text;message.className='message show '+kind;}
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-$('openLogin').addEventListener('click',openModal);$('closeLogin').addEventListener('click',closeModal);
+$('openLogin').addEventListener('click',()=>openModal('guardian'));$('openTeamLogin').addEventListener('click',()=>openModal('team'));$('closeLogin').addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 function setPrivateMode(on){$('publicHeader').style.display=on?'none':'';$('publicSite').style.display=on?'none':'';$('publicFooter').style.display=on?'none':'';$('dashboard').classList.toggle('show',on);if(on)window.scrollTo(0,0);}
 function niceRole(role){return ({admin:'Administrador',teacher:'Professor',guardian:'Responsável'})[role]||role||'Usuário';}
@@ -428,7 +428,7 @@ async function loadDashboard(){
   $('profileInfo').textContent=(currentProfile.full_name||user.email)+' • '+niceRole(currentProfile.role)+' • '+user.email;
   const guardian=currentProfile.role==='guardian';
   $('dashNav').style.display=guardian?'none':'';
-  $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
+  $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Portal do Responsável — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
   setPrivateMode(true);await renderView(guardian?'familia':'inicio');
 }
 function makeKpi(label,value){const box=node('div',undefined,'kpi');box.append(node('strong',String(value)),node('span',label));return box;}
