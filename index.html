@@ -207,6 +207,16 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  .wizard-controls .btn{min-width:0;padding:12px 13px}
 }
 
+
+/* Portal do Responsável — criação de acesso sem interferir no acesso da equipe */
+.guardian-register{display:none;margin-top:18px;padding-top:18px;border-top:1px solid #e5e7eb}
+.guardian-register.open{display:block}
+.guardian-register-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.guardian-register-grid .field.full{grid-column:1/-1}
+.guardian-register .notice{margin-top:12px}
+.guardian-register-toggle{margin-top:12px;background:none;border:0;color:#9a741c;text-decoration:underline;cursor:pointer;font:inherit;font-weight:700}
+@media(max-width:600px){.guardian-register-grid{grid-template-columns:1fr}.guardian-register-grid .field.full{grid-column:auto}}
+
 </style>
 </head>
 <body>
@@ -321,7 +331,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
     <fieldset class="enroll-group" data-wizard-step="2"><legend>2. Identificação do responsável legal</legend>
      <div class="enroll-grid">
       <div class="enroll-field full"><label for="enGuardianName">Nome completo do responsável *</label><input id="enGuardianName" required maxlength="180" autocomplete="name"></div>
-      <div class="enroll-field"><label for="enGuardianDocument">CIN/RG *</label><input id="enGuardianDocument" required maxlength="30" autocomplete="off"></div>
+      <div class="enroll-field"><label for="enGuardianDocument">CPF do responsável *</label><input id="enGuardianDocument" required maxlength="14" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" pattern="[0-9.\-]{11,14}"></div>
       <div class="enroll-field"><label for="enGuardianPhone">Telefone / WhatsApp *</label><input id="enGuardianPhone" type="tel" required maxlength="30" autocomplete="tel"></div>
       <div class="enroll-field"><label for="enGuardianEmail">E-mail (opcional)</label><input id="enGuardianEmail" type="email" maxlength="180" autocomplete="email"></div>
       <div class="enroll-field"><label for="enRelationship">Parentesco / vínculo *</label><select id="enRelationship" required><option value="">Selecione</option><option>Mãe</option><option>Pai</option><option>Avó</option><option>Avô</option><option>Tutor(a) legal</option><option>Outro responsável legal</option></select></div>
@@ -390,7 +400,26 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  <div class="footer-bottom"><span>© 2026 Projeto Sementes. Todos os direitos reservados.</span><span>Site institucional · Prévia de redesign</span></div>
 </div></footer>
 
-<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button">✕</button><h2 id="loginTitle">Acesso da equipe</h2><p id="loginIntro">Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form><div class="message" id="loginMessage" role="status"></div><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
+<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button">✕</button><h2 id="loginTitle">Acesso da equipe</h2><p id="loginIntro">Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form>
+<div id="guardianRegister" class="guardian-register" aria-live="polite">
+ <h3 style="margin:0 0 8px;color:#172131">Criar acesso do responsável</h3>
+ <p class="notice">Disponível para matrículas digitais com protocolo. Use os mesmos dados informados na ficha. Alunos antigos importados da planilha precisam de validação presencial pela Secretaria.</p>
+ <form id="guardianRegisterForm">
+  <div class="guardian-register-grid">
+   <div class="field full"><label for="grProtocol">Protocolo da matrícula</label><input id="grProtocol" required maxlength="24" placeholder="PS-2026-XXXXXXXX" autocomplete="off"></div>
+   <div class="field full"><label for="grName">Nome completo do responsável</label><input id="grName" required maxlength="180" autocomplete="name"></div>
+   <div class="field"><label for="grCpf">CPF informado na matrícula</label><input id="grCpf" required maxlength="14" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"></div>
+   <div class="field"><label for="grPhone">Telefone informado na matrícula</label><input id="grPhone" required maxlength="20" inputmode="tel" autocomplete="tel"></div>
+   <div class="field full"><label for="grEmail">E-mail para entrar no Portal</label><input id="grEmail" type="email" required maxlength="254" autocomplete="email"></div>
+   <div class="field"><label for="grPassword">Criar senha</label><input id="grPassword" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></div>
+   <div class="field"><label for="grPassword2">Confirmar senha</label><input id="grPassword2" type="password" required minlength="10" maxlength="128" autocomplete="new-password"></div>
+   <div class="field full"><div id="guardianTurnstile"></div></div>
+  </div>
+  <div class="panel-actions"><button class="btn btn-gold" id="guardianRegisterBtn" type="submit">Criar meu acesso</button><button class="btn" id="guardianRegisterCancel" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Voltar ao login</button></div>
+ </form>
+ <div class="message" id="guardianRegisterMessage" role="status"></div>
+</div>
+<div class="message" id="loginMessage" role="status"></div><button class="guardian-register-toggle" id="guardianRegisterToggle" type="button" style="display:none">Ainda não tenho acesso — criar conta</button><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
 
 <section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="atividades" type="button">Atividades</button></div><div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
 
@@ -424,9 +453,14 @@ function openModal(mode='team'){
   loginMode=mode;
   $('loginTitle').textContent=mode==='guardian'?'Portal do Responsável':'Acesso da Equipe';
   $('loginIntro').textContent=mode==='guardian'
-    ?'Entre com o e-mail e a senha da sua conta de responsável.'
+    ?'Entre com seu e-mail e senha. Se ainda não possui acesso, crie sua conta usando o protocolo da matrícula.'
     :'Entre com o e-mail e a senha cadastrados para a equipe do projeto.';
   $('email').value='';$('password').value='';
+  $('guardianRegister').classList.remove('open');
+  form.style.display='';
+  $('resetBtn').style.display='';
+  $('guardianRegisterMessage').className='message';
+  $('guardianRegisterToggle').style.display=mode==='guardian'?'':'none';
   modal.classList.add('open');message.className='message';
 }
 function closeModal(){modal.classList.remove('open');}
@@ -640,6 +674,44 @@ $('resetBtn').addEventListener('click',async()=>{
   try{const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});if(error)throw error;showMessage('Se este e-mail estiver cadastrado, as instruções de recuperação serão enviadas conforme a configuração do Supabase.','ok');}
   catch(err){showMessage(err.message||'Não foi possível solicitar a recuperação.','error');}
 });
+
+// Criação segura de conta para responsáveis com matrícula digital validável.
+(function(){
+ const toggle=$('guardianRegisterToggle'),box=$('guardianRegister'),regForm=$('guardianRegisterForm');
+ if(!toggle||!box||!regForm)return;
+ const siteKey='0x4AAAAAAFswPZX9oVKHZCXu';
+ let widget=null,turnstileReady=false;
+ function regMsg(t,k){const el=$('guardianRegisterMessage');el.textContent=t;el.className='message show '+k;}
+ function ensureWidget(){
+  if(turnstileReady||!window.turnstile)return;
+  widget=window.turnstile.render('#guardianTurnstile',{sitekey:siteKey});turnstileReady=true;
+ }
+ toggle.addEventListener('click',()=>{
+  if(loginMode!=='guardian')return;
+  form.style.display='none';$('resetBtn').style.display='none';toggle.style.display='none';box.classList.add('open');
+  if(window.turnstile)ensureWidget();
+ });
+ $('guardianRegisterCancel').addEventListener('click',()=>{box.classList.remove('open');form.style.display='';$('resetBtn').style.display='';toggle.style.display=loginMode==='guardian'?'':'';});
+ regForm.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!supabaseClient){regMsg('Conexão com Supabase não inicializada.','error');return;}
+  const password=$('grPassword').value;
+  if(password!==$('grPassword2').value){regMsg('As senhas não coincidem.','error');return;}
+  if(password.length<10){regMsg('A senha deve ter pelo menos 10 caracteres.','error');return;}
+  const token=window.turnstile&&widget!==null?window.turnstile.getResponse(widget):'';
+  const btn=$('guardianRegisterBtn');btn.disabled=true;btn.textContent='Validando…';
+  try{
+   const response=await fetch(SUPABASE_URL+'/functions/v1/guardian-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'claim_enrollment',protocol:$('grProtocol').value.trim().toUpperCase(),guardian_name:$('grName').value.trim(),guardian_cpf:$('grCpf').value.trim(),guardian_phone:$('grPhone').value.trim(),email:$('grEmail').value.trim().toLowerCase(),password,turnstile_token:token})});
+   const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Não foi possível criar o acesso.');
+   regMsg('Acesso criado. Agora entre com o e-mail e a senha cadastrados.','ok');
+   $('email').value=$('grEmail').value.trim().toLowerCase();$('password').value='';
+   regForm.reset();if(window.turnstile&&widget!==null)window.turnstile.reset(widget);
+   box.classList.remove('open');form.style.display='';$('resetBtn').style.display='';
+  }catch(err){regMsg(err.message||'Falha ao criar acesso.','error');if(window.turnstile&&widget!==null)window.turnstile.reset(widget);}
+  finally{btn.disabled=false;btn.textContent='Criar meu acesso';}
+ });
+ const ts=document.createElement('script');ts.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';ts.async=true;ts.defer=true;ts.onload=()=>{if(box.classList.contains('open'))ensureWidget();};document.head.append(ts);
+})();
 (async()=>{
   if(!supabaseClient)return;
   const {data:{session}}=await supabaseClient.auth.getSession();
