@@ -80,6 +80,19 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .kpi{padding:18px;border:1px solid #e3e7ed;border-radius:5px}
 #dashboard .kpi strong{font-size:25px;color:#0b1b30;display:block}
 #dashboard .kpi span{font-size:12px;color:#5d6673}
+#dashboard .indicator-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+#dashboard .indicator-grid .kpi{background:#fff}
+#dashboard .indicator-grid .kpi strong{font-size:27px}
+#dashboard .indicator-section{margin-top:22px}
+#dashboard .indicator-section h3{font:800 17px Manrope,sans-serif;color:#0b1b30;margin:0 0 12px}
+#dashboard .age-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#dashboard .age-item{border:1px solid #e3e7ed;border-radius:5px;padding:13px;background:#fbfcfd}
+#dashboard .age-item strong{display:block;font:800 21px Manrope,sans-serif;color:#0b1b30}
+#dashboard .age-item span{font-size:11px;color:#5d6673}
+#dashboard .activity-card{border:1px solid #e4e0d6;border-left:4px solid #d7b34b;background:#fff;padding:17px 18px;border-radius:5px;margin-top:12px}
+#dashboard .activity-card strong{display:block;color:#0b1b30;font:800 16px Manrope,sans-serif;margin-bottom:7px}
+#dashboard .activity-card p{margin:4px 0;color:#5d6673;font-size:13px;line-height:1.55}
+#dashboard .source-note{font-size:11px;color:#707782;line-height:1.55;margin-top:15px}
 #dashboard .student-tools{display:grid;grid-template-columns:minmax(180px,1fr) minmax(140px,220px) auto;gap:10px;margin-top:14px}
 #dashboard .search{width:100%;border:1px solid #cfd5df;border-radius:5px;padding:11px;font:inherit;color:#172131;background:#fff}
 #dashboard .student-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
@@ -101,7 +114,8 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #studentModal .detail-meta{font-size:12px;color:#667085;margin:8px 0 15px}
 #studentModal .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
 #dashboard .btn:disabled,#studentModal .btn:disabled{opacity:.55;cursor:not-allowed}
-@media(max-width:800px){#dashboard .student-tools{grid-template-columns:1fr}#dashboard .student-summary,#dashboard .kpis{grid-template-columns:1fr}#dashboard .dash-head h1{font-size:20px}}
+@media(max-width:800px){#dashboard .student-tools{grid-template-columns:1fr}#dashboard .student-summary,#dashboard .kpis{grid-template-columns:1fr}#dashboard .indicator-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#dashboard .age-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#dashboard .dash-head h1{font-size:20px}}
+@media(max-width:420px){#dashboard .indicator-grid,#dashboard .age-grid{grid-template-columns:1fr}}
 @media(max-width:650px){#studentModal .student-detail-grid{grid-template-columns:1fr}#studentModal .student-detail-grid .field.full{grid-column:auto}}
 
 /* Formulário de interesse em parceria — seção pública */
@@ -473,12 +487,34 @@ async function renderView(view){
     await renderGuardianFamily(content);return;
   }
   if(view==='inicio'){
-    const panel=node('div',undefined,'dash-panel');panel.append(node('h2','Visão geral'),node('p','Resumo inicial do painel administrativo.'));
-    const kpis=node('div',undefined,'kpis');kpis.append(makeKpi('Perfil autenticado',niceRole(currentProfile.role)),makeKpi('Status do acesso',currentProfile.is_active?'Ativo':'Inativo'),makeKpi('Banco de alunos','Clique em “Alunos” para consultar'));
-    panel.append(kpis,node('p','O painel está ligado à autenticação e consulta o perfil ativo. As funções de edição, frequência e relatórios serão adicionadas depois de validar as políticas e os campos do banco.','status-line'));content.append(panel);return;
+    const panel=node('div',undefined,'dash-panel');
+    panel.append(node('h2','Indicadores do Projeto Sementes'),node('p','Resumo da base de cadastro e das atividades informadas até 31 de outubro de 2026.'));
+    const kpis=node('div',undefined,'indicator-grid');
+    kpis.append(makeKpi('Alunos na planilha','57'),makeKpi('Bairros identificados','10'),makeKpi('Palestras realizadas','1'),makeKpi('Aulas previstas no período','22'));
+    panel.append(kpis);
+    const ages=node('div',undefined,'indicator-section');
+    ages.append(node('h3','Faixa etária dos alunos — referência em 31/10/2026'));
+    const ageGrid=node('div',undefined,'age-grid');
+    [['Até 5 anos','4'],['6 a 9 anos','23'],['10 a 12 anos','20'],['13 a 16 anos','9']].forEach(([label,value])=>{const item=node('div',undefined,'age-item');item.append(node('strong',value),node('span',label));ageGrid.append(item);});
+    ages.append(ageGrid);panel.append(ages);
+    const sex=node('p','Sexo: informação não disponível na planilha consultada; não foi estimada pelos nomes.','status-line');panel.append(sex);
+    const classes=node('div',undefined,'indicator-section');classes.append(node('h3','Aulas previstas por mês'));
+    const classGrid=node('div',undefined,'age-grid');
+    [['Agosto','8 aulas'],['Setembro','9 aulas'],['Outubro','5 aulas']].forEach(([label,value])=>{const item=node('div',undefined,'age-item');item.append(node('strong',value),node('span',label+' de 2026'));classGrid.append(item);});
+    classes.append(classGrid);panel.append(classes);
+    panel.append(node('p','Base consultada: planilha de 57 registros. Todos aparecem com status de pré-cadastro pendente de conferência. A distribuição etária considera 56 datas de nascimento válidas; 1 data está no futuro (04/11/2026) e precisa ser conferida. Os bairros foram padronizados sem diferença entre acentos (ex.: Guatós/Guatos). A contagem de aulas é prevista pelo calendário informado, não confirmação de presença ou realização.','source-note'));
+    content.append(panel);return;
   }
   if(view==='alunos'){await renderStudents(content);return;}
-  const panel=node('div',undefined,'dash-panel');panel.append(node('h2','Atividades'),node('p','A área de atividades será ligada às tabelas de palestras, aulas e ações sociais após validar seus campos e permissões.','status-line'));content.append(panel);
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Atividades'),node('p','Registro das atividades informadas pelo projeto. Apresentação em cartões, sem tabela nesta etapa.','status-line'));
+  const lecture=node('article',undefined,'activity-card');
+  lecture.append(node('strong','Palestra: Escolhas Saudáveis – Influências – Prevenções'),node('p','Período: setembro de 2026 • Data informada no cronograma: 29/09/2026 • 19h'),node('p','Palestrante: equipe PROERD'),node('p','Quantidade registrada: 1 palestra realizada.'));
+  panel.append(lecture);
+  const classCard=node('article',undefined,'activity-card');
+  classCard.append(node('strong','Aulas de Jiu-Jitsu'),node('p','Agosto: duas vezes por semana — 8 aulas previstas.'),node('p','Setembro: duas vezes por semana — 9 aulas previstas.'),node('p','Outubro: aos sábados até 31/10/2026 — 5 aulas previstas.'),node('p','Total do período: 22 aulas previstas.'));
+  panel.append(classCard,node('p','As atividades serão mantidas em cartões simples. Nenhuma tabela de atividades foi criada.','source-note'));
+  content.append(panel);
 }
 async function renderStudents(content){
   const panel=node('div',undefined,'dash-panel');
