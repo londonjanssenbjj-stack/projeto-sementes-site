@@ -217,6 +217,28 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 .guardian-register-toggle{margin-top:12px;background:none;border:0;color:#9a741c;text-decoration:underline;cursor:pointer;font:inherit;font-weight:700}
 @media(max-width:600px){.guardian-register-grid{grid-template-columns:1fr}.guardian-register-grid .field.full{grid-column:auto}}
 
+
+/* Indicadores públicos — seção de impacto */
+.public-indicators{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:26px 0 18px}
+.public-indicator,.public-indicator-panel{background:#fff;border:1px solid rgba(184,142,41,.25);border-radius:16px;padding:22px;box-shadow:0 12px 34px rgba(15,23,42,.06)}
+.public-indicator{display:flex;flex-direction:column;gap:7px;min-height:145px}
+.public-indicator>strong{font-size:clamp(2rem,4vw,3.1rem);line-height:1;color:#b88e29;font-weight:800}
+.public-indicator>strong i{font-size:.55em;font-style:normal;color:#667085}
+.public-indicator>span,.public-indicator-panel h3{font-size:.76rem;letter-spacing:.09em;font-weight:800;color:#172131}
+.public-indicator>small,.public-indicator-panel p,.public-indicator-note{font-size:.85rem;line-height:1.55;color:#667085}
+.public-indicators-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.public-indicator-panel h3{margin:0 0 14px}
+.public-month-row{display:grid;grid-template-columns:76px 1fr 28px;gap:10px;align-items:center;margin:13px 0;font-size:.88rem;color:#344054}
+.public-month-row b,.public-age-row b{color:#172131;font-variant-numeric:tabular-nums}
+.public-bar{height:9px;background:#eef0f3;border-radius:99px;overflow:hidden}
+.public-bar i{display:block;height:100%;background:linear-gradient(90deg,#b88e29,#e0bd62);border-radius:99px}
+.public-age-row{display:grid;grid-template-columns:1fr 36px 48px;gap:8px;padding:10px 0;border-bottom:1px solid #edf0f2;font-size:.9rem;color:#344054}
+.public-age-row:last-child{border-bottom:0}
+.public-age-row small{text-align:right;color:#667085}
+.public-neighborhoods{grid-column:1/-1}
+.public-indicator-note{margin:16px 2px 0;font-size:.78rem}
+@media(max-width:700px){.public-indicators{grid-template-columns:1fr;gap:10px}.public-indicator{min-height:0}.public-indicators-grid{grid-template-columns:1fr}.public-neighborhoods{grid-column:auto}}
+
 </style>
 </head>
 <body>
@@ -244,12 +266,37 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
   <div class="hero-note"><span>ESPORTE</span><span>EDUCAÇÃO</span><span>FAMÍLIA</span><span>COMUNIDADE</span></div>
  </div></div>
 </section>
-<section class="impact" id="impacto"><div class="wrap impact-grid">
- <div class="impact-intro">Impacto que começa <span>perto de casa.</span></div>
- <p class="impact-desc">Acompanhamos nossas atividades e resultados para prestar contas com clareza. Os indicadores são publicados após conferência dos registros.</p>
- <div class="metric"><strong>Corumbá</strong><small>ATUAÇÃO LOCAL</small></div>
- <div class="metric"><strong>4 frentes</strong><small>DE ATUAÇÃO SOCIAL</small></div>
- <div class="metric"><strong>Em evolução</strong><small>INDICADORES DO PROJETO</small></div>
+<section class="impact" id="impacto"><div class="wrap">
+ <div class="impact-grid">
+  <div class="impact-intro">Impacto que começa <span>perto de casa.</span></div>
+  <p class="impact-desc">Números consolidados da atuação do Projeto Sementes em Corumbá-MS. Os dados abaixo têm como referência outubro de 2026 e não identificam alunos ou responsáveis.</p>
+ </div>
+ <div class="public-indicators" aria-label="Indicadores públicos do Projeto Sementes">
+  <article class="public-indicator"><strong>57</strong><span>ALUNOS CADASTRADOS</span><small>Registros consolidados até outubro/2026</small></article>
+  <article class="public-indicator"><strong>10 <i>/ 23</i></strong><span>BAIRROS IDENTIFICADOS</span><small>Territórios presentes nos cadastros disponíveis</small></article>
+  <article class="public-indicator"><strong>4</strong><span>FRENTES DE ATUAÇÃO</span><small>Esporte, educação, família e comunidade</small></article>
+ </div>
+ <div class="public-indicators-grid">
+  <article class="public-indicator-panel">
+   <h3>EVOLUÇÃO DAS INSCRIÇÕES</h3>
+   <p>Inscrições acumuladas registradas em cada mês:</p>
+   <div class="public-month-row"><span>Agosto</span><div class="public-bar"><i style="width:61.4%"></i></div><b>35</b></div>
+   <div class="public-month-row"><span>Setembro</span><div class="public-bar"><i style="width:86%"></i></div><b>49</b></div>
+   <div class="public-month-row"><span>Outubro</span><div class="public-bar"><i style="width:100%"></i></div><b>57</b></div>
+  </article>
+  <article class="public-indicator-panel">
+   <h3>FAIXA ETÁRIA DOS CADASTRADOS</h3>
+   <div class="public-age-row"><span>Até 5 anos</span><b>4</b><small>7,0%</small></div>
+   <div class="public-age-row"><span>6 a 9 anos</span><b>24</b><small>42,1%</small></div>
+   <div class="public-age-row"><span>10 a 12 anos</span><b>20</b><small>35,1%</small></div>
+   <div class="public-age-row"><span>13 a 16 anos</span><b>9</b><small>15,8%</small></div>
+  </article>
+  <article class="public-indicator-panel public-neighborhoods">
+   <h3>BAIRROS IDENTIFICADOS</h3>
+   <p>Nova Corumbá, Guaná 1, Guaná 2, Guarani, Guatós, Guaicurus, Centro, Cravo 1, Flamboyant 2 e Popular Nova.</p>
+  </article>
+ </div>
+ <p class="public-indicator-note">Fonte: consolidação da ficha de cadastro e do calendário institucional disponíveis. Referência: outubro de 2026. Os números representam registros administrativos, não necessariamente alunos ativos ou frequência atual. A distribuição etária informada na base soma 57 cadastros.</p>
 </div></section>
 <section class="block" id="projeto"><div class="wrap story">
  <div class="story-photo"><div class="photo-caption">Uma semente de hoje. Mais oportunidades para amanhã.</div></div>
