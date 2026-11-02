@@ -257,6 +257,46 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 @media(max-width:520px){.faith-grid,.faith-actions,.class-schedule{grid-template-columns:1fr}}
 
 #fe-familia .family-intro{display:grid;grid-template-columns:minmax(260px,.8fr) 1.2fr;gap:clamp(28px,6vw,76px);align-items:center;margin:0 0 58px;padding:12px 0 44px;border-bottom:1px solid rgba(215,179,75,.28)}#fe-familia .family-photo{min-height:350px;border-radius:16px;background-position:center;background-size:cover}#fe-familia .family-copy{color:#fff;max-width:720px}#fe-familia .family-copy h2{color:#fff}#fe-familia .family-copy>p:not(.kicker){color:#cbd5e1;line-height:1.8}#fe-familia .family-copy .kicker{color:var(--gold)}#fe-familia .family-points{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:26px}#fe-familia .family-point{border-top:2px solid var(--gold);padding-top:14px;color:#fff;font-weight:700}#fe-familia .family-point small{display:block;color:#cbd5e1;font-weight:400;margin-top:6px;line-height:1.5}@media(max-width:760px){#fe-familia .family-intro{grid-template-columns:1fr;gap:24px;margin-bottom:38px;padding-bottom:32px}#fe-familia .family-photo{min-height:300px}#fe-familia .family-points{grid-template-columns:1fr}}
+
+/* Refinamento institucional: História, Propósito e Família */
+.story{grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:clamp(30px,5vw,68px);align-items:center}
+.story-photo{min-height:460px;aspect-ratio:4/4.2;background-position:center 38%;border-radius:12px;box-shadow:0 22px 55px rgba(11,27,48,.16)}
+.story-copy{max-width:650px}.story-copy .kicker{letter-spacing:2.2px}
+.story-copy h2{font-size:clamp(34px,4vw,50px);line-height:1.08;margin-bottom:22px}
+.story-copy p{font-size:15px;line-height:1.9;color:#515b68}.story-copy p strong{color:var(--navy)}
+.purpose-section{background:#f0ede5;overflow:hidden}
+.purpose-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:clamp(32px,6vw,78px);align-items:center}
+.purpose-copy h2{font-size:clamp(34px,4vw,49px);margin-bottom:22px}.purpose-copy h2 em{font-style:normal;color:#a77f1e}
+.purpose-copy>p:not(.kicker){font-size:15px;line-height:1.85;color:#535d68}
+.purpose-copy .purpose-lead{font-size:18px!important;line-height:1.65!important;color:var(--navy)!important;font-weight:700}
+.purpose-values{display:grid;gap:0;margin-top:28px;border-top:1px solid #d7d1c5}
+.purpose-values>div{display:grid;grid-template-columns:38px 1fr;column-gap:12px;padding:15px 0;border-bottom:1px solid #d7d1c5}
+.purpose-values span{grid-row:span 2;color:#a77f1e;font:800 13px Manrope,sans-serif}
+.purpose-values strong{font:800 14px Manrope,sans-serif;color:var(--navy)}.purpose-values small{font-size:12px;color:#66707b;margin-top:4px}
+.purpose-visual{position:relative;padding:0 0 68px 42px}
+.purpose-main-image{display:block;width:100%;height:420px;object-fit:cover;object-position:center;border-radius:12px;box-shadow:0 20px 48px rgba(11,27,48,.18)}
+.purpose-image-note{position:absolute;left:0;bottom:94px;width:min(78%,330px);padding:20px 22px;background:var(--navy);color:#fff;border-left:4px solid var(--gold);box-shadow:0 14px 35px rgba(0,0,0,.2)}
+.purpose-image-note span{display:block;color:var(--gold2);font-size:9px;letter-spacing:1.8px;font-weight:900;margin-bottom:8px}
+.purpose-image-note strong{font:800 18px/1.3 Manrope,sans-serif}
+.purpose-mini-images{position:absolute;right:0;bottom:0;display:flex;gap:10px}
+.purpose-mini-images img{width:116px;height:100px;object-fit:cover;border:5px solid var(--paper);border-radius:9px;box-shadow:0 8px 22px rgba(0,0,0,.15)}
+#fe-familia .family-intro{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(30px,5vw,68px);align-items:center;padding:0 0 52px;margin-bottom:58px}
+#fe-familia .family-photo{min-height:0;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;padding:14px;overflow:hidden;background:linear-gradient(145deg,#142d49,#071321);border:1px solid rgba(215,179,75,.55);border-radius:14px;box-shadow:0 22px 55px rgba(0,0,0,.25)}
+#fe-familia .family-photo img{display:block;width:100%;height:100%;max-height:470px;object-fit:contain;object-position:center center;border-radius:7px}
+#fe-familia .family-copy h2{font-size:clamp(34px,4vw,49px);line-height:1.08;margin-bottom:20px}
+#fe-familia .family-copy>p:not(.kicker){font-size:15px;line-height:1.9}
+#fe-familia .family-point{font-size:13px}
+@media(max-width:760px){
+ .story{grid-template-columns:1fr;gap:28px}.story-photo{min-height:300px;aspect-ratio:16/11}.story-copy h2{font-size:35px}
+ .purpose-layout{grid-template-columns:1fr;gap:30px}.purpose-copy h2{font-size:36px}
+ .purpose-visual{padding-left:18px;padding-bottom:58px}.purpose-main-image{height:310px}
+ .purpose-image-note{bottom:82px;width:82%;padding:15px}.purpose-image-note strong{font-size:15px}
+ .purpose-mini-images img{width:90px;height:78px;border-width:4px}
+ #fe-familia .family-intro{grid-template-columns:1fr;gap:25px}
+ #fe-familia .family-photo{aspect-ratio:4/3;padding:8px}
+ #fe-familia .family-photo img{max-height:420px}
+ #fe-familia .family-copy h2{font-size:36px}
+}
 </style>
 </head>
 <body>
@@ -330,6 +370,25 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  <p><strong>Sejam todos bem-vindos a esta família! 🌱🥋</strong></p>
  </div>
 </div></section>
+<section class="block purpose-section" id="proposito">
+ <div class="wrap"><div class="purpose-layout">
+  <div class="purpose-copy">
+   <p class="kicker">NOSSO PROPÓSITO</p><h2>Formar pessoas. <em>Fortalecer famílias.</em></h2>
+   <p class="purpose-lead">Acreditamos que o esporte pode abrir caminhos e que cada criança merece oportunidades para crescer com dignidade, confiança e esperança.</p>
+   <p>Por meio do Jiu-Jitsu, da educação, da fé e do acolhimento, trabalhamos para desenvolver não apenas atletas, mas cidadãos conscientes, respeitosos e preparados para fazer a diferença em suas comunidades.</p>
+   <div class="purpose-values">
+    <div><span>01</span><strong>Desenvolvimento integral</strong><small>Corpo, mente, caráter e valores.</small></div>
+    <div><span>02</span><strong>Famílias fortalecidas</strong><small>Parceria, cuidado e participação.</small></div>
+    <div><span>03</span><strong>Comunidade transformada</strong><small>Oportunidades que alcançam novos lares.</small></div>
+   </div>
+  </div>
+  <div class="purpose-visual">
+   <img class="purpose-main-image" src="frente_educacao.png" alt="Ações educativas do Projeto Sementes" loading="lazy">
+   <div class="purpose-image-note"><span>SEMENTES QUE GERAM FUTURO</span><strong>Educação, esporte e valores para a vida.</strong></div>
+   <div class="purpose-mini-images"><img src="frente_esporte.png" alt="Jiu-Jitsu e disciplina" loading="lazy"><img src="frente_familia_valores.png" alt="Família e formação de valores" loading="lazy"></div>
+  </div>
+ </div></div>
+</section>
 <section class="block programs" id="atuacao"><div class="wrap">
  <div class="section-head"><div><p class="kicker">NOSSAS FRENTES</p><h2>Muito além do <em>Jiu-Jitsu.</em></h2></div><p>Uma atuação integrada que valoriza o desenvolvimento pessoal, a convivência familiar e o compromisso com a comunidade.</p></div>
  <div class="program-grid">
@@ -342,7 +401,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  </div>
 </div></section>
 
-<section class="block section-dark" id="fe-familia"><div class="wrap"><div class="family-intro"><div class="family-photo" role="img" aria-label="Família e comunidade reunidas"></div><div class="family-copy"><p class="kicker">FAMÍLIA, A BASE DE TUDO</p><h2>Uma criança não caminha <em style="color:#b88e29;font-style:normal">sozinha.</em></h2><p>A família faz parte da jornada. Queremos construir uma relação próxima com os responsáveis, com informações claras sobre as atividades e espaço para acompanhar o desenvolvimento dos alunos.</p>
+<section class="block section-dark" id="fe-familia"><div class="wrap"><div class="family-intro"><div class="family-photo"><img src="foto_familia_sementes.png" alt="Família do Projeto Sementes reunida" loading="lazy"></div><div class="family-copy"><p class="kicker">FAMÍLIA, A BASE DE TUDO</p><h2>Uma criança não caminha <em style="color:#b88e29;font-style:normal">sozinha.</em></h2><p>A família faz parte da jornada. Queremos construir uma relação próxima com os responsáveis, com informações claras sobre as atividades e espaço para acompanhar o desenvolvimento dos alunos.</p>
   <div class="family-points"><div class="family-point">Cadastro acompanhado<small>Informações organizadas e atualizadas pelos responsáveis.</small></div><div class="family-point">Comunicação clara<small>Orientações sobre aulas, atividades e eventos.</small></div></div>
   
  </div>
