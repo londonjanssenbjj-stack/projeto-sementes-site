@@ -273,13 +273,13 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 .purpose-values>div{display:grid;grid-template-columns:38px 1fr;column-gap:12px;padding:15px 0;border-bottom:1px solid #d7d1c5}
 .purpose-values span{grid-row:span 2;color:#a77f1e;font:800 13px Manrope,sans-serif}
 .purpose-values strong{font:800 14px Manrope,sans-serif;color:var(--navy)}.purpose-values small{font-size:12px;color:#66707b;margin-top:4px}
-.purpose-visual{position:relative;padding:0 0 68px 42px}
-.purpose-main-image{display:block;width:100%;height:420px;object-fit:cover;object-position:center;border-radius:12px;box-shadow:0 20px 48px rgba(11,27,48,.18)}
-.purpose-image-note{position:absolute;left:0;bottom:94px;width:min(78%,330px);padding:20px 22px;background:var(--navy);color:#fff;border-left:4px solid var(--gold);box-shadow:0 14px 35px rgba(0,0,0,.2)}
-.purpose-image-note span{display:block;color:var(--gold2);font-size:9px;letter-spacing:1.8px;font-weight:900;margin-bottom:8px}
-.purpose-image-note strong{font:800 18px/1.3 Manrope,sans-serif}
-.purpose-mini-images{position:absolute;right:0;bottom:0;display:flex;gap:10px}
-.purpose-mini-images img{width:116px;height:100px;object-fit:cover;border:5px solid var(--paper);border-radius:9px;box-shadow:0 8px 22px rgba(0,0,0,.15)}
+.purpose-visual{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;align-items:stretch;padding:0}
+.purpose-photo-card{position:relative;display:block;min-width:0;aspect-ratio:4/5;overflow:hidden;border:1px solid rgba(215,179,75,.65);border-radius:12px;background:var(--navy);box-shadow:0 16px 36px rgba(11,27,48,.18)}
+.purpose-photo-card img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .45s ease}
+.purpose-photo-card:hover img{transform:scale(1.045)}
+.purpose-photo-card:after{content:"";position:absolute;inset:42% 0 0;background:linear-gradient(transparent,rgba(5,15,29,.86))}
+.purpose-photo-caption{position:absolute;z-index:1;left:12px;right:10px;bottom:14px;color:#fff;font:800 12px/1.35 Manrope,sans-serif}
+.purpose-photo-caption:before{content:"";display:block;width:24px;height:2px;background:var(--gold);margin-bottom:8px}
 #fe-familia .family-intro{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(30px,5vw,68px);align-items:center;padding:0 0 52px;margin-bottom:58px}
 #fe-familia .family-photo{min-height:0;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;padding:14px;overflow:hidden;background:linear-gradient(145deg,#142d49,#071321);border:1px solid rgba(215,179,75,.55);border-radius:14px;box-shadow:0 22px 55px rgba(0,0,0,.25)}
 #fe-familia .family-photo img{display:block;width:100%;height:100%;max-height:470px;object-fit:contain;object-position:center center;border-radius:7px}
@@ -289,9 +289,10 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 @media(max-width:760px){
  .story{grid-template-columns:1fr;gap:28px}.story-photo{min-height:300px;aspect-ratio:16/11}.story-copy h2{font-size:35px}
  .purpose-layout{grid-template-columns:1fr;gap:30px}.purpose-copy h2{font-size:36px}
- .purpose-visual{padding-left:18px;padding-bottom:58px}.purpose-main-image{height:310px}
- .purpose-image-note{bottom:82px;width:82%;padding:15px}.purpose-image-note strong{font-size:15px}
- .purpose-mini-images img{width:90px;height:78px;border-width:4px}
+ .purpose-visual{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+ .purpose-photo-card{aspect-ratio:3/4;border-radius:9px}
+ .purpose-photo-caption{left:8px;right:7px;bottom:10px;font-size:10px}
+ .purpose-photo-caption:before{margin-bottom:6px}
  #fe-familia .family-intro{grid-template-columns:1fr;gap:25px}
  #fe-familia .family-photo{aspect-ratio:4/3;padding:8px}
  #fe-familia .family-photo img{max-height:420px}
@@ -382,10 +383,10 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
     <div><span>03</span><strong>Comunidade transformada</strong><small>Oportunidades que alcançam novos lares.</small></div>
    </div>
   </div>
-  <div class="purpose-visual">
-   <img class="purpose-main-image" src="frente_educacao.png" alt="Ações educativas do Projeto Sementes" loading="lazy">
-   <div class="purpose-image-note"><span>SEMENTES QUE GERAM FUTURO</span><strong>Educação, esporte e valores para a vida.</strong></div>
-   <div class="purpose-mini-images"><img src="frente_esporte.png" alt="Jiu-Jitsu e disciplina" loading="lazy"><img src="frente_familia_valores.png" alt="Família e formação de valores" loading="lazy"></div>
+  <div class="purpose-visual" aria-label="Imagens que representam o propósito do Projeto Sementes">
+   <figure class="purpose-photo-card"><img src="frente_esporte.png" alt="Crianças praticando Jiu-Jitsu e aprendendo disciplina" loading="lazy"><figcaption class="purpose-photo-caption">Esporte e disciplina</figcaption></figure>
+   <figure class="purpose-photo-card"><img src="frente_educacao.png" alt="Ações educativas e socioeducativas do Projeto Sementes" loading="lazy"><figcaption class="purpose-photo-caption">Educação e cidadania</figcaption></figure>
+   <figure class="purpose-photo-card"><img src="frente_familia_valores.png" alt="Família, fé e formação de valores" loading="lazy"><figcaption class="purpose-photo-caption">Família e valores</figcaption></figure>
   </div>
  </div></div>
 </section>
