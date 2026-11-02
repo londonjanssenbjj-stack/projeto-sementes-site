@@ -265,7 +265,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 .story-copy h2{font-size:clamp(34px,4vw,50px);line-height:1.08;margin-bottom:22px}
 .story-copy p{font-size:15px;line-height:1.9;color:#515b68}.story-copy p strong{color:var(--navy)}
 .purpose-section{background:#f0ede5;overflow:hidden}
-.purpose-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:clamp(32px,6vw,78px);align-items:center}
+.purpose-layout{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:clamp(28px,4vw,56px);align-items:center}
 .purpose-copy h2{font-size:clamp(34px,4vw,49px);margin-bottom:22px}.purpose-copy h2 em{font-style:normal;color:#a77f1e}
 .purpose-copy>p:not(.kicker){font-size:15px;line-height:1.85;color:#535d68}
 .purpose-copy .purpose-lead{font-size:18px!important;line-height:1.65!important;color:var(--navy)!important;font-weight:700}
@@ -273,8 +273,8 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 .purpose-values>div{display:grid;grid-template-columns:38px 1fr;column-gap:12px;padding:15px 0;border-bottom:1px solid #d7d1c5}
 .purpose-values span{grid-row:span 2;color:#a77f1e;font:800 13px Manrope,sans-serif}
 .purpose-values strong{font:800 14px Manrope,sans-serif;color:var(--navy)}.purpose-values small{font-size:12px;color:#66707b;margin-top:4px}
-.purpose-visual{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;align-items:stretch;padding:0}
-.purpose-photo-card{position:relative;display:block;min-width:0;aspect-ratio:4/5;overflow:hidden;border:1px solid rgba(215,179,75,.65);border-radius:12px;background:var(--navy);box-shadow:0 16px 36px rgba(11,27,48,.18)}
+.purpose-visual{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;padding:0;width:100%;min-width:0}
+.purpose-photo-card{position:relative;display:block;margin:0;width:100%;min-width:0;height:clamp(300px,28vw,380px);aspect-ratio:auto;overflow:hidden;border:1px solid rgba(215,179,75,.65);border-radius:14px;background:var(--navy);box-shadow:0 16px 36px rgba(11,27,48,.18)}
 .purpose-photo-card img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .45s ease}
 .purpose-photo-card:hover img{transform:scale(1.045)}
 .purpose-photo-card:after{content:"";position:absolute;inset:42% 0 0;background:linear-gradient(transparent,rgba(5,15,29,.86))}
@@ -289,9 +289,9 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 @media(max-width:760px){
  .story{grid-template-columns:1fr;gap:28px}.story-photo{min-height:300px;aspect-ratio:16/11}.story-copy h2{font-size:35px}
  .purpose-layout{grid-template-columns:1fr;gap:30px}.purpose-copy h2{font-size:36px}
- .purpose-visual{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
- .purpose-photo-card{aspect-ratio:3/4;border-radius:9px}
- .purpose-photo-caption{left:8px;right:7px;bottom:10px;font-size:10px}
+ .purpose-visual{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+ .purpose-photo-card{height:clamp(210px,42vw,270px);border-radius:10px}
+ .purpose-photo-caption{left:9px;right:8px;bottom:12px;font-size:11px}
  .purpose-photo-caption:before{margin-bottom:6px}
  #fe-familia .family-intro{grid-template-columns:1fr;gap:25px}
  #fe-familia .family-photo{aspect-ratio:4/3;padding:8px}
