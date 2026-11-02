@@ -754,6 +754,41 @@ async function renderClassAttendance(content){
   loadBtn.addEventListener('click',openRoster);
   classSelect.addEventListener('change',()=>{rosterWrap.replaceChildren();summary.replaceChildren();status.textContent='Turma alterada. Clique em “Abrir chamada” para carregar os alunos.';});
 }
+async function renderOverview(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Indicadores do Projeto Sementes'),node('p','Indicadores atualizados diretamente do Supabase, respeitando o acesso do perfil autenticado.','status-line'));
+  const grid=node('div',undefined,'indicator-grid');
+  const status=node('p','Atualizando indicadores…','status-line');
+  panel.append(grid,status);content.append(panel);
+  try{
+    const [studentsResult,classesResult,enrollmentsResult,attendanceResult,lecturesResult,actionsResult,neighborhoodsResult]=await Promise.all([
+      supabaseClient.from('students').select('id',{count:'exact',head:true}),
+      supabaseClient.from('classes').select('id',{count:'exact',head:true}).eq('is_active',true),
+      supabaseClient.from('class_enrollments').select('student_id').eq('active',true).limit(1000),
+      supabaseClient.from('attendance').select('student_id',{count:'exact',head:true}),
+      supabaseClient.from('lectures').select('id',{count:'exact',head:true}).eq('status','completed'),
+      supabaseClient.from('social_actions').select('id',{count:'exact',head:true}).eq('status','completed'),
+      supabaseClient.from('students').select('neighborhood').not('neighborhood','is',null).limit(1000)
+    ]);
+    const errors=[studentsResult,classesResult,enrollmentsResult,attendanceResult,lecturesResult,actionsResult,neighborhoodsResult].filter(x=>x.error);
+    if(errors.length)throw errors[0].error;
+    const enrolledUnique=new Set((enrollmentsResult.data||[]).map(x=>x.student_id).filter(Boolean)).size;
+    const neighborhoods=new Set((neighborhoodsResult.data||[]).map(x=>String(x.neighborhood||'').trim().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR')).filter(Boolean)).size;
+    [
+      makeKpi('Alunos visíveis neste perfil',studentsResult.count??0),
+      makeKpi('Turmas ativas',classesResult.count??0),
+      makeKpi('Alunos em turmas ativas',enrolledUnique),
+      makeKpi('Registros de frequência',attendanceResult.count??0),
+      makeKpi('Palestras realizadas',lecturesResult.count??0),
+      makeKpi('Ações sociais concluídas',actionsResult.count??0),
+      makeKpi('Bairros identificados',neighborhoods)
+    ].forEach(x=>grid.append(x));
+    status.textContent='Atualizado em '+new Date().toLocaleString('pt-BR')+'. Os números refletem somente os registros que este perfil tem autorização para consultar.';
+  }catch(err){
+    status.textContent='Não foi possível atualizar todos os indicadores: '+(err.message||String(err));
+    status.className='status-line error';
+  }
+}
 async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
@@ -761,25 +796,7 @@ async function renderView(view){
     if(view!=='familia'){await renderGuardianFamily(content);return;}
     await renderGuardianFamily(content);return;
   }
-  if(view==='inicio'){
-    const panel=node('div',undefined,'dash-panel');
-    panel.append(node('h2','Indicadores do Projeto Sementes'),node('p','Resumo da base de cadastro e das atividades informadas até 31 de outubro de 2026.'));
-    const kpis=node('div',undefined,'indicator-grid');
-    kpis.append(makeKpi('Alunos na planilha','57'),makeKpi('Bairros identificados','10'),makeKpi('Palestras realizadas','1'),makeKpi('Aulas previstas no período','22'));
-    panel.append(kpis);
-    const ages=node('div',undefined,'indicator-section');
-    ages.append(node('h3','Faixa etária dos alunos — referência em 31/10/2026'));
-    const ageGrid=node('div',undefined,'age-grid');
-    [['Até 5 anos','4'],['6 a 9 anos','23'],['10 a 12 anos','20'],['13 a 16 anos','9']].forEach(([label,value])=>{const item=node('div',undefined,'age-item');item.append(node('strong',value),node('span',label));ageGrid.append(item);});
-    ages.append(ageGrid);panel.append(ages);
-    const sex=node('p','Sexo: informação não disponível na planilha consultada; não foi estimada pelos nomes.','status-line');panel.append(sex);
-    const classes=node('div',undefined,'indicator-section');classes.append(node('h3','Aulas previstas por mês'));
-    const classGrid=node('div',undefined,'age-grid');
-    [['Agosto','8 aulas'],['Setembro','9 aulas'],['Outubro','5 aulas']].forEach(([label,value])=>{const item=node('div',undefined,'age-item');item.append(node('strong',value),node('span',label+' de 2026'));classGrid.append(item);});
-    classes.append(classGrid);panel.append(classes);
-    panel.append(node('p','Base consultada: planilha de 57 registros. Todos aparecem com status de pré-cadastro pendente de conferência. A distribuição etária considera 56 datas de nascimento válidas; 1 data está no futuro (04/11/2026) e precisa ser conferida. Os bairros foram padronizados sem diferença entre acentos (ex.: Guatós/Guatos). A contagem de aulas é prevista pelo calendário informado, não confirmação de presença ou realização.','source-note'));
-    content.append(panel);return;
-  }
+  if(view==='inicio'){await renderOverview(content);return;}
   if(view==='alunos'){await renderStudents(content);return;}
   if(view==='chamada'){await renderClassAttendance(content);return;}
   const panel=node('div',undefined,'dash-panel');
