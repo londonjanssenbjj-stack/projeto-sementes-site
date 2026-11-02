@@ -570,7 +570,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 </div>
 <div class="message" id="loginMessage" role="status"></div><button class="guardian-register-toggle" id="guardianRegisterToggle" type="button" style="display:none">Ainda não tenho acesso — criar conta</button><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
 
-<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="atividades" type="button">Atividades</button></div>
+<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="historico" type="button">Frequência</button><button data-view="atividades" type="button">Atividades</button></div>
 <div id="guardianProvisionTools" class="dash-panel" style="display:none;margin:18px 0"><h2>Provisionamento de responsáveis</h2><p>Cria uma conta por telefone cadastrado, agrupa irmãos e confere os 57 vínculos familiares. Contas já existentes serão reaproveitadas, sem duplicação.</p><button class="btn btn-gold" id="provisionGuardiansBtn" type="button">Criar / conferir os 42 acessos</button><div id="provisionGuardiansResult" class="message" role="status" style="margin-top:12px"></div></div>
 <div id="passwordChangeGate" class="dash-panel" style="display:none;margin:18px 0"><h2>Defina sua senha pessoal</h2><p>Por segurança, substitua a senha temporária antes de acessar os dados dos alunos.</p><form id="passwordChangeForm"><div class="field"><label for="guardianNewPassword">Nova senha (mínimo 10 caracteres)</label><input id="guardianNewPassword" type="password" minlength="10" autocomplete="new-password" required></div><div class="field"><label for="guardianConfirmPassword">Confirme a nova senha</label><input id="guardianConfirmPassword" type="password" minlength="10" autocomplete="new-password" required></div><button class="btn btn-gold" id="saveGuardianPasswordBtn" type="submit">Salvar minha senha</button><div id="passwordChangeMessage" class="message" role="status"></div></form></div>
 <div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
@@ -789,6 +789,51 @@ async function renderOverview(content){
     status.className='status-line error';
   }
 }
+async function renderAttendanceHistory(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Histórico de frequência'),node('p','Consulte as chamadas registradas por turma e período. A listagem segue as permissões do seu perfil.','status-line'));
+  const toolsBox=node('div',undefined,'student-tools');
+  const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Filtrar histórico por turma');
+  const from=node('input',undefined,'search');from.type='date';from.setAttribute('aria-label','Data inicial');
+  const to=node('input',undefined,'search');to.type='date';to.setAttribute('aria-label','Data final');
+  const searchBtn=node('button','Consultar histórico','btn btn-gold small-btn');searchBtn.type='button';
+  toolsBox.append(classSelect,from,to,searchBtn);
+  const status=node('p','Carregando filtros…','status-line'),wrap=node('div',undefined,'table-wrap');
+  panel.append(toolsBox,status,wrap);content.append(panel);
+  try{
+    const {data:classes,error:classError}=await supabaseClient.from('classes').select('id,name').eq('is_active',true).order('name');
+    if(classError)throw classError;
+    classSelect.replaceChildren();const all=node('option','Todas as turmas');all.value='';classSelect.append(all);
+    (classes||[]).forEach(c=>{const o=node('option',c.name);o.value=c.id;classSelect.append(o);});
+    status.textContent='Filtros prontos. Escolha o período e consulte.';
+  }catch(err){status.textContent='Erro ao carregar turmas: '+(err.message||String(err));return;}
+  async function queryHistory(){
+    searchBtn.disabled=true;wrap.replaceChildren();status.textContent='Consultando chamadas…';
+    try{
+      let lessonsQuery=supabaseClient.from('lessons').select('id,class_id,lesson_date,status,classes(name)').order('lesson_date',{ascending:false}).limit(300);
+      if(classSelect.value)lessonsQuery=lessonsQuery.eq('class_id',classSelect.value);
+      if(from.value)lessonsQuery=lessonsQuery.gte('lesson_date',from.value);
+      if(to.value)lessonsQuery=lessonsQuery.lte('lesson_date',to.value);
+      const {data:lessons,error:lessonError}=await lessonsQuery;
+      if(lessonError)throw lessonError;
+      if(!lessons||!lessons.length){status.textContent='Nenhuma chamada encontrada para os filtros selecionados.';return;}
+      const lessonIds=lessons.map(x=>x.id);
+      const {data:rows,error:attendanceError}=await supabaseClient.from('attendance').select('lesson_id,student_id,status,students(full_name)').in('lesson_id',lessonIds).limit(3000);
+      if(attendanceError)throw attendanceError;
+      const byLesson=new Map();
+      (rows||[]).forEach(r=>{const v=byLesson.get(r.lesson_id)||{present:0,absent:0,excused:0};if(Object.prototype.hasOwnProperty.call(v,r.status))v[r.status]++;byLesson.set(r.lesson_id,v);});
+      const table=node('table'),thead=node('thead'),head=node('tr');
+      ['Data','Turma','Presentes','Ausentes','Justificadas','Total lançado'].forEach(x=>head.append(node('th',x)));thead.append(head);table.append(thead);
+      const tbody=node('tbody');
+      lessons.forEach(l=>{const c=byLesson.get(l.id)||{present:0,absent:0,excused:0};const tr=node('tr');tr.append(node('td',new Date(l.lesson_date+'T12:00:00').toLocaleDateString('pt-BR')),node('td',l.classes?.name||'Turma'),node('td',String(c.present)),node('td',String(c.absent)),node('td',String(c.excused)),node('td',String(c.present+c.absent+c.excused)));tbody.append(tr);});
+      table.append(tbody);wrap.append(table);
+      status.textContent=lessons.length+' aula(s) encontradas. Registros de presença visíveis: '+(rows||[]).length+'.';
+    }catch(err){status.textContent='Não foi possível consultar o histórico: '+(err.message||String(err));}
+    finally{searchBtn.disabled=false;}
+  }
+  searchBtn.addEventListener('click',queryHistory);
+  queryHistory();
+}
 async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
@@ -798,7 +843,7 @@ async function renderView(view){
   }
   if(view==='inicio'){await renderOverview(content);return;}
   if(view==='alunos'){await renderStudents(content);return;}
-  if(view==='chamada'){await renderClassAttendance(content);return;}
+  if(view==='chamada'){await renderClassAttendance(content);return;}\n  if(view==='historico'){await renderAttendanceHistory(content);return;}
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Atividades'),node('p','Registro das atividades informadas pelo projeto. Apresentação em cartões, sem tabela nesta etapa.','status-line'));
   const lecture=node('article',undefined,'activity-card');
