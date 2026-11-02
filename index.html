@@ -544,14 +544,15 @@ function openModal(mode='team'){
   $('loginIdentifierLabel').textContent=mode==='guardian'?'Celular ou e-mail':'E-mail';
   $('email').placeholder=mode==='guardian'?'(67) 99999-9999 ou seuemail@exemplo.com':'seuemail@exemplo.com';
   $('loginIntro').textContent=mode==='guardian'
-    ?'Entre com seu celular ou e-mail e senha. Para criar acesso, confirme seus dados cadastrados na matrícula.'
+    ?'Entre com seu número de celular (DDD + número) e a senha fornecida pela Secretaria. O celular será usado como identificador de acesso.'
     :'Entre com o e-mail e a senha cadastrados para a equipe do projeto.';
   $('email').value='';$('password').value='';
   $('guardianRegister').classList.remove('open');
   form.style.display='';
   $('resetBtn').style.display='';
   $('guardianRegisterMessage').className='message';
-  $('guardianRegisterToggle').style.display=mode==='guardian'?'':'none';
+  // Cadastro público antigo desativado: os responsáveis serão provisionados pela Secretaria.
+  $('guardianRegisterToggle').style.display='none';
   modal.classList.add('open');message.className='message';
 }
 function closeModal(){modal.classList.remove('open');}
@@ -746,9 +747,9 @@ form.addEventListener('submit',async e=>{
   try{
     let credentials;
     if(loginMode==='guardian' && !identifier.includes('@')){
-      let phone=identifier.replace(/\D/g,'');
-      if(phone.startsWith('55')) phone='+'+phone; else phone='+55'+phone;
-      credentials={phone,password};
+      const phone=identifier.replace(/\D/g,'');
+      if(phone.length<10 || phone.length>13) throw new Error('Informe um celular válido com DDD.');
+      credentials={email:phone+'@sementes.internal',password};
     } else { credentials={email:identifier.toLowerCase(),password}; }
     const {error}=await supabaseClient.auth.signInWithPassword(credentials);
     if(error)throw error;
