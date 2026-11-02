@@ -239,6 +239,22 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 .public-indicator-note{margin:16px 2px 0;font-size:.78rem}
 @media(max-width:700px){.public-indicators{grid-template-columns:1fr;gap:10px}.public-indicator{min-height:0}.public-indicators-grid{grid-template-columns:1fr}.public-neighborhoods{grid-column:auto}}
 
+
+/* Seções História, Fé e horários — extensão responsiva da identidade existente */
+.faith-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.faith-card,.faith-actions article{background:#122943;border:1px solid rgba(215,179,75,.35);padding:20px;border-radius:5px;color:#fff}
+.faith-label{font-size:9px;letter-spacing:1.8px;color:#f0d77d;font-weight:900}
+.faith-card h3,.faith-actions h3{font:800 19px Manrope,sans-serif;margin:9px 0;color:#fff}
+.faith-card p,.faith-actions p{font-size:12px;color:#c9d0da;margin:0 0 13px}
+.faith-card a,.faith-actions a{font-size:12px;font-weight:800;color:#f0d77d;text-decoration:underline;text-underline-offset:3px}
+.faith-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+.class-schedule{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.class-schedule article{background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold);padding:22px;border-radius:5px}
+.class-schedule span{display:block;color:#9b741b;font-size:10px;font-weight:900;letter-spacing:1.5px}
+.class-schedule strong{display:block;color:var(--navy);font:800 21px Manrope,sans-serif;margin:9px 0}
+.class-schedule small{color:var(--muted);font-size:12px}
+@media(max-width:800px){.faith-grid,.faith-actions,.class-schedule{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.faith-grid,.faith-actions,.class-schedule{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -251,7 +267,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
   <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-label="Abrir menu">☰ Menu</button>
   <a class="btn btn-outline" href="#inicio" id="screenBack" aria-label="Voltar à página inicial">← Voltar ao início</a>
   <nav id="mainNav" aria-label="Navegação principal">
-   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#galeria">Atividades</a><a href="#parceria">Parcerias</a><a href="#matricula">Matrícula</a>
+   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#familia">Família</a><a href="#fe-familia">Fé</a><a href="#horarios-aulas">Aulas</a><a href="#galeria">Atividades</a><a href="#parceria">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
   <div class="actions"><button class="btn btn-gold" id="openGuardianLogin" type="button" aria-label="Acessar Portal do Responsável">Portal do Responsável</button><button class="btn btn-outline" id="openTeamLogin" type="button" aria-label="Acessar painel da equipe">Acesso da Equipe</button></div>
  </div>
@@ -286,10 +302,10 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
   </article>
   <article class="public-indicator-panel">
    <h3>FAIXA ETÁRIA DOS CADASTRADOS</h3>
-   <div class="public-age-row"><span>Até 5 anos</span><b>4</b><small>7,0%</small></div>
-   <div class="public-age-row"><span>6 a 9 anos</span><b>24</b><small>42,1%</small></div>
-   <div class="public-age-row"><span>10 a 12 anos</span><b>20</b><small>35,1%</small></div>
-   <div class="public-age-row"><span>13 a 16 anos</span><b>9</b><small>15,8%</small></div>
+   <div class="public-age-row"><span>Até 5 anos</span><b>4</b><small>7,1%</small></div>
+   <div class="public-age-row"><span>6 a 9 anos</span><b>23</b><small>41,1%</small></div>
+   <div class="public-age-row"><span>10 a 12 anos</span><b>20</b><small>35,7%</small></div>
+   <div class="public-age-row"><span>13 a 16 anos</span><b>9</b><small>16,1%</small></div>
   </article>
   <article class="public-indicator-panel public-neighborhoods">
    <h3>BAIRROS IDENTIFICADOS</h3>
@@ -300,10 +316,17 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 </div></section>
 <section class="block" id="projeto"><div class="wrap story">
  <div class="story-photo"><div class="photo-caption">Uma semente de hoje. Mais oportunidades para amanhã.</div></div>
- <div class="story-copy"><p class="kicker">QUEM SOMOS</p><h2>Mais oportunidades para crescer <em style="color:#b88e29;font-style:normal">dentro e fora do tatame.</em></h2>
- <p>O Projeto Sementes une esporte, cidadania e desenvolvimento integral para apoiar a formação de crianças e adolescentes em Corumbá-MS.</p>
- <p>Com atividades de Jiu-Jitsu, ações socioeducativas, fortalecimento familiar e solidariedade, cultivamos respeito, disciplina, responsabilidade e participação comunitária.</p>
-</div>
+ <div class="story-copy"><p class="kicker">HISTÓRIA DO PROJETO</p><h2>Uma história plantada <em style="color:#b88e29;font-style:normal">pela fé.</em></h2>
+ <p><strong>A Paz seja convosco!</strong></p>
+ <p>O Projeto Sementes nasceu no coração de Deus e, por Sua misericórdia, foi compartilhado aos corações do Pastor Joel Amorim e toda IEQ Guaicurus.</p>
+ <p>Foram dias de oração, planejamento e dedicação, buscando estruturar o projeto da melhor maneira para acolher e atender crianças das comunidades próximas à igreja, alcançando também suas famílias.</p>
+ <p>Em uma noite de culto, o mover de Deus quebrantou os corações da membresia da igreja, que abraçaram o projeto. Na mesma noite, por meio das ofertas voluntárias dos irmãos, foi arrecadado o valor necessário para a aquisição do nosso dojo.</p>
+ <p>Assim, com o apoio dos instrutores e dos pais, iniciamos nossas aulas. Desde então, com muita disciplina, dedicação e entusiasmo, nossos alunos vêm aprendendo muito mais do que a Arte Suave.</p>
+ <p>Ensinamos valores morais e éticos fundamentados em Cristo Jesus, unindo o Jiu-Jitsu a palestras socioeducativas e ações de evangelismo, contribuindo para a formação integral de nossas crianças, adolescentes e jovens e fortalecendo os vínculos com suas famílias.</p>
+ <p>Acreditamos que, quando alcançamos uma criança, também podemos alcançar seu lar. Por isso, nosso propósito é construir uma ponte entre o projeto, os alunos e suas famílias, levando acolhimento, conhecimento, valores e a Palavra de Deus.</p>
+ <p>Nosso grande sonho é levar a Semente do Evangelho até a sua casa, alcançando não apenas nossos alunos, mas toda a sua família.</p>
+ <p><strong>Sejam todos bem-vindos a esta família! 🌱🥋</strong></p>
+ </div>
 </div></section>
 <section class="block programs" id="atuacao"><div class="wrap">
  <div class="section-head"><div><p class="kicker">NOSSAS FRENTES</p><h2>Muito além do <em>Jiu-Jitsu.</em></h2></div><p>Uma atuação integrada que valoriza o desenvolvimento pessoal, a convivência familiar e o compromisso com a comunidade.</p></div>
@@ -322,6 +345,26 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
   <div class="family-points"><div class="family-point">Cadastro acompanhado<small>Informações organizadas e atualizadas pelos responsáveis.</small></div><div class="family-point">Comunicação clara<small>Orientações sobre aulas, atividades e eventos.</small></div></div>
   <a class="btn" href="https://wa.me/5567998513404?text=Ol%C3%A1%2C%20gostaria%20de%20receber%20informa%C3%A7%C3%B5es%20sobre%20as%20atividades%20para%20as%20fam%C3%ADlias%20e%20as%20c%C3%A9lulas%20do%20Projeto%20Sementes." target="_blank" rel="noopener noreferrer" style="background:#168447;color:#fff">Falar com a equipe sobre as células ↗</a>
  </div>
+</div></section>
+<section class="block section-dark" id="fe-familia"><div class="wrap">
+ <div class="section-head"><div><p class="kicker">FÉ, FAMÍLIA E ACOLHIMENTO</p><h2>Família, cuidado <em>e oração.</em></h2></div><p>A igreja caminha ao lado das famílias. Conheça nossas células e fale diretamente com as responsáveis pelo WhatsApp.</p></div>
+ <div class="faith-grid">
+  <article class="faith-card"><span class="faith-label">CÉLULA</span><h3>Preciosas</h3><p>Responsável: Rosalina</p><a href="https://wa.me/5567998547152?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20C%C3%A9lula%20Preciosas." target="_blank" rel="noopener noreferrer">Falar com Rosalina ↗</a></article>
+  <article class="faith-card"><span class="faith-label">CÉLULA</span><h3>Filhas</h3><p>Responsável: Fabíola</p><a href="https://wa.me/5567996602974?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20C%C3%A9lula%20Filhas." target="_blank" rel="noopener noreferrer">Falar com Fabíola ↗</a></article>
+  <article class="faith-card"><span class="faith-label">CÉLULA</span><h3>Guerreiras</h3><p>Responsável: Adriana</p><a href="https://wa.me/55679924989750?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20C%C3%A9lula%20Guerreiras." target="_blank" rel="noopener noreferrer">Falar com Adriana ↗</a></article>
+  <article class="faith-card"><span class="faith-label">CÉLULA</span><h3>Princesas</h3><p>Responsável: Lisbela</p><a href="https://wa.me/5567996527268?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20C%C3%A9lula%20Princesas." target="_blank" rel="noopener noreferrer">Falar com Lisbela ↗</a></article>
+  <article class="faith-card"><span class="faith-label">CÉLULA</span><h3>Bem-aventuradas</h3><p>Responsável: Edluce</p><a href="https://wa.me/5567999180140?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20C%C3%A9lula%20Bem-aventuradas." target="_blank" rel="noopener noreferrer">Falar com Edluce ↗</a></article>
+  <article class="faith-card"><span class="faith-label">CÉLULA</span><h3>Virtuosas</h3><p>Responsável: Jakelyne</p><a href="https://wa.me/5567998857914?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20C%C3%A9lula%20Virtuosas." target="_blank" rel="noopener noreferrer">Falar com Jakelyne ↗</a></article>
+ </div>
+ <div class="faith-actions">
+  <article><h3>Rede de Mulheres</h3><p>Líder: Pra. Simone</p><a href="https://wa.me/5567999195844?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20Rede%20de%20Mulheres." target="_blank" rel="noopener noreferrer">Falar com a Rede de Mulheres ↗</a></article>
+  <article><h3>Pedido de oração</h3><p>Compartilhe seu pedido com o Pastor Joel.</p><a href="https://wa.me/5567999082592?text=Ol%C3%A1%2C%20Pastor%20Joel.%20Gostaria%20de%20compartilhar%20um%20pedido%20de%20ora%C3%A7%C3%A3o." target="_blank" rel="noopener noreferrer">Enviar pedido de oração ↗</a></article>
+  <article><h3>Quero ser batizado</h3><p>Fale com o Pastor Joel para receber orientação.</p><a href="https://wa.me/5567999082592?text=Ol%C3%A1%2C%20Pastor%20Joel.%20Tenho%20interesse%20em%20ser%20batizado%20e%20gostaria%20de%20orienta%C3%A7%C3%A3o." target="_blank" rel="noopener noreferrer">Conversar sobre batismo ↗</a></article>
+ </div>
+</div></section>
+<section class="block" id="horarios-aulas"><div class="wrap">
+ <div class="section-head"><div><p class="kicker">JIU-JITSU PARA CRIANÇAS E ADOLESCENTES</p><h2>Disciplina que transforma <em>vidas.</em></h2></div><p>Aulas aos sábados na IEQ Guaicurus. Para saber mais, entre em contato com a equipe do projeto.</p></div>
+ <div class="class-schedule"><article><span>6 A 10 ANOS</span><strong>9h30 às 10h30</strong><small>Turma infantil</small></article><article><span>11 A 17 ANOS</span><strong>10h30 às 11h30</strong><small>Turma de adolescentes</small></article><article><span>LOCAL</span><strong>IEQ Guaicurus</strong><small>Rua Edu Rocha, 218 — Corumbá-MS</small></article></div>
 </div></section>
 <section class="block section-dark" id="galeria"><div class="wrap">
  <div class="section-head"><div><p class="kicker">VIDA EM MOVIMENTO</p><h2>Pequenas conquistas.<br><em>Grandes sementes.</em></h2></div><p>Um espaço para registrar treinos, encontros, palestras e ações comunitárias. As imagens finais devem ser substituídas por fotos reais autorizadas do Projeto Sementes.</p></div>
