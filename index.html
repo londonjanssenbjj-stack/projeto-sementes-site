@@ -725,7 +725,7 @@ async function renderClassAttendance(content){
       (students||[]).forEach(st=>{
         const tr=node('tr');tr.append(node('td',st.full_name||'Aluno'),node('td',st.belt||'Não informada'));
         const td=node('td'),sel=node('select',undefined,'search');sel.setAttribute('aria-label','Presença de '+st.full_name);
-        [['','Selecione'],['present','Presente'],['absent','Ausente'],['justified','Falta justificada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;sel.append(o);});
+        [['','Selecione'],['present','Presente'],['absent','Ausente'],['excused','Falta justificada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;sel.append(o);});
         const old=existingMap.get(st.id);if(old)sel.value=old.status;
         td.append(sel);tr.append(td);tbody.append(tr);selectors.push({student_id:st.id,select:sel});
       });
