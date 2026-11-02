@@ -570,7 +570,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 </div>
 <div class="message" id="loginMessage" role="status"></div><button class="guardian-register-toggle" id="guardianRegisterToggle" type="button" style="display:none">Ainda não tenho acesso — criar conta</button><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
 
-<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="atividades" type="button">Atividades</button></div>
+<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="atividades" type="button">Atividades</button></div>
 <div id="guardianProvisionTools" class="dash-panel" style="display:none;margin:18px 0"><h2>Provisionamento de responsáveis</h2><p>Cria uma conta por telefone cadastrado, agrupa irmãos e confere os 57 vínculos familiares. Contas já existentes serão reaproveitadas, sem duplicação.</p><button class="btn btn-gold" id="provisionGuardiansBtn" type="button">Criar / conferir os 42 acessos</button><div id="provisionGuardiansResult" class="message" role="status" style="margin-top:12px"></div></div>
 <div id="passwordChangeGate" class="dash-panel" style="display:none;margin:18px 0"><h2>Defina sua senha pessoal</h2><p>Por segurança, substitua a senha temporária antes de acessar os dados dos alunos.</p><form id="passwordChangeForm"><div class="field"><label for="guardianNewPassword">Nova senha (mínimo 10 caracteres)</label><input id="guardianNewPassword" type="password" minlength="10" autocomplete="new-password" required></div><div class="field"><label for="guardianConfirmPassword">Confirme a nova senha</label><input id="guardianConfirmPassword" type="password" minlength="10" autocomplete="new-password" required></div><button class="btn btn-gold" id="saveGuardianPasswordBtn" type="submit">Salvar minha senha</button><div id="passwordChangeMessage" class="message" role="status"></div></form></div>
 <div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
@@ -675,6 +675,85 @@ async function renderGuardianFamily(content){
   });
   panel.append(node('p','Para corrigir dados cadastrais ou solicitar informações, entre em contato com a Secretaria.','status-line'));
 }
+async function renderClassAttendance(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Turmas e chamada'),node('p','Selecione uma turma e a data da aula. A lista é carregada conforme as permissões do seu perfil.','status-line'));
+  const formBox=node('div',undefined,'student-tools');
+  const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Selecionar turma');
+  const dateInput=node('input',undefined,'search');dateInput.type='date';dateInput.setAttribute('aria-label','Data da aula');
+  const today=new Date();dateInput.value=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
+  const loadBtn=node('button','Abrir chamada','btn btn-gold small-btn');loadBtn.type='button';
+  formBox.append(classSelect,dateInput,loadBtn);panel.append(formBox);
+  const summary=node('div',undefined,'student-summary'),rosterWrap=node('div',undefined,'table-wrap'),status=node('p','Carregando turmas autorizadas…','status-line');
+  panel.append(summary,status,rosterWrap);content.append(panel);
+  let classes=[];
+  try{
+    const {data,error}=await supabaseClient.from('classes').select('id,name,age_group,weekday,start_time,end_time').eq('is_active',true).order('name');
+    if(error)throw error;
+    classes=data||[];
+    classSelect.replaceChildren();
+    if(!classes.length){status.textContent='Nenhuma turma disponível para este perfil. Peça ao administrador para conferir os vínculos de instrutor.';loadBtn.disabled=true;return;}
+    classes.forEach(c=>{const o=node('option',c.name);o.value=c.id;classSelect.append(o);});
+    status.textContent='Turmas carregadas: '+classes.length+'. Alunos e chamadas respeitam as regras de acesso do Supabase.';
+  }catch(err){status.textContent='Não foi possível carregar as turmas: '+(err.message||String(err));loadBtn.disabled=true;return;}
+  async function openRoster(){
+    loadBtn.disabled=true;loadBtn.textContent='Carregando…';rosterWrap.replaceChildren();summary.replaceChildren();
+    try{
+      const classId=classSelect.value,lessonDate=dateInput.value;
+      if(!classId||!lessonDate)throw new Error('Selecione a turma e a data da aula.');
+      const {data:enrollments,error:enrollError}=await supabaseClient.from('class_enrollments').select('student_id').eq('class_id',classId).eq('active',true);
+      if(enrollError)throw enrollError;
+      const ids=[...new Set((enrollments||[]).map(x=>x.student_id).filter(Boolean))];
+      if(!ids.length){status.textContent='Esta turma ainda não possui alunos ativos.';return;}
+      const {data:students,error:studentsError}=await supabaseClient.from('students').select('id,full_name,belt').in('id',ids).order('full_name');
+      if(studentsError)throw studentsError;
+      let {data:lessonRows,error:lessonError}=await supabaseClient.from('lessons').select('id').eq('class_id',classId).eq('lesson_date',lessonDate).order('created_at',{ascending:false}).limit(1);
+      if(lessonError)throw lessonError;
+      let lessonId=lessonRows&&lessonRows[0]?lessonRows[0].id:null;
+      if(!lessonId){
+        const {data:newLesson,error:createError}=await supabaseClient.from('lessons').insert({class_id:classId,lesson_date:lessonDate,status:'scheduled',created_by:currentProfile.id}).select('id').single();
+        if(createError)throw createError;
+        lessonId=newLesson.id;
+      }
+      const {data:existing,error:attendanceError}=await supabaseClient.from('attendance').select('student_id,status,note').eq('lesson_id',lessonId);
+      if(attendanceError)throw attendanceError;
+      const existingMap=new Map((existing||[]).map(x=>[x.student_id,x]));
+      const counts=makeKpi('Alunos ativos na turma',students.length);summary.append(counts);
+      const table=node('table'),thead=node('thead'),head=node('tr');
+      ['Aluno','Faixa','Presença'].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
+      const tbody=node('tbody'),selectors=[];
+      (students||[]).forEach(st=>{
+        const tr=node('tr');tr.append(node('td',st.full_name||'Aluno'),node('td',st.belt||'Não informada'));
+        const td=node('td'),sel=node('select',undefined,'search');sel.setAttribute('aria-label','Presença de '+st.full_name);
+        [['','Selecione'],['present','Presente'],['absent','Ausente'],['justified','Falta justificada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;sel.append(o);});
+        const old=existingMap.get(st.id);if(old)sel.value=old.status;
+        td.append(sel);tr.append(td);tbody.append(tr);selectors.push({student_id:st.id,select:sel});
+      });
+      table.append(tbody);rosterWrap.append(table);
+      const save=node('button','Salvar chamada','btn btn-gold small-btn');save.type='button';save.style.marginTop='14px';
+      save.addEventListener('click',async()=>{
+        const missing=selectors.filter(x=>!x.select.value);
+        if(missing.length){status.textContent='Marque a situação de presença de todos os '+missing.length+' aluno(s) pendente(s) antes de salvar.';return;}
+        save.disabled=true;save.textContent='Salvando…';
+        try{
+          const rows=selectors.map(x=>({lesson_id:lessonId,student_id:x.student_id,status:x.select.value,recorded_by:currentProfile.id,updated_at:new Date().toISOString()}));
+          const {error:saveError}=await supabaseClient.from('attendance').upsert(rows,{onConflict:'lesson_id,student_id'});
+          if(saveError)throw saveError;
+          const {error:lessonUpdateError}=await supabaseClient.from('lessons').update({status:'completed'}).eq('id',lessonId);
+          if(lessonUpdateError)throw lessonUpdateError;
+          status.textContent='Chamada salva com sucesso: '+rows.length+' alunos registrados em '+new Date(lessonDate+'T12:00:00').toLocaleDateString('pt-BR')+'.';
+          status.className='status-line';
+          save.textContent='Chamada salva';
+        }catch(err){status.textContent='Erro ao salvar a chamada: '+(err.message||String(err));save.disabled=false;save.textContent='Tentar salvar novamente';}
+      });
+      rosterWrap.append(save);
+      status.textContent='Confira cada aluno e selecione Presente, Ausente ou Falta justificada. A chamada só será gravada após clicar em “Salvar chamada”.';
+    }catch(err){status.textContent='Não foi possível abrir a chamada: '+(err.message||String(err));}
+    finally{loadBtn.disabled=false;loadBtn.textContent='Atualizar chamada';}
+  }
+  loadBtn.addEventListener('click',openRoster);
+  classSelect.addEventListener('change',()=>{rosterWrap.replaceChildren();summary.replaceChildren();status.textContent='Turma alterada. Clique em “Abrir chamada” para carregar os alunos.';});
+}
 async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
@@ -702,6 +781,7 @@ async function renderView(view){
     content.append(panel);return;
   }
   if(view==='alunos'){await renderStudents(content);return;}
+  if(view==='chamada'){await renderClassAttendance(content);return;}
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Atividades'),node('p','Registro das atividades informadas pelo projeto. Apresentação em cartões, sem tabela nesta etapa.','status-line'));
   const lecture=node('article',undefined,'activity-card');
