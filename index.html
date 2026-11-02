@@ -570,7 +570,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 </div>
 <div class="message" id="loginMessage" role="status"></div><button class="guardian-register-toggle" id="guardianRegisterToggle" type="button" style="display:none">Ainda não tenho acesso — criar conta</button><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
 
-<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="historico" type="button">Frequência</button><button data-view="atividades" type="button">Atividades</button></div>
+<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="historico" type="button">Frequência</button><button data-view="tecnica" type="button">Avaliação e graduação</button><button data-view="atividades" type="button">Atividades</button></div>
 <div id="guardianProvisionTools" class="dash-panel" style="display:none;margin:18px 0"><h2>Provisionamento de responsáveis</h2><p>Cria uma conta por telefone cadastrado, agrupa irmãos e confere os 57 vínculos familiares. Contas já existentes serão reaproveitadas, sem duplicação.</p><button class="btn btn-gold" id="provisionGuardiansBtn" type="button">Criar / conferir os 42 acessos</button><div id="provisionGuardiansResult" class="message" role="status" style="margin-top:12px"></div></div>
 <div id="passwordChangeGate" class="dash-panel" style="display:none;margin:18px 0"><h2>Defina sua senha pessoal</h2><p>Por segurança, substitua a senha temporária antes de acessar os dados dos alunos.</p><form id="passwordChangeForm"><div class="field"><label for="guardianNewPassword">Nova senha (mínimo 10 caracteres)</label><input id="guardianNewPassword" type="password" minlength="10" autocomplete="new-password" required></div><div class="field"><label for="guardianConfirmPassword">Confirme a nova senha</label><input id="guardianConfirmPassword" type="password" minlength="10" autocomplete="new-password" required></div><button class="btn btn-gold" id="saveGuardianPasswordBtn" type="submit">Salvar minha senha</button><div id="passwordChangeMessage" class="message" role="status"></div></form></div>
 <div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
@@ -834,6 +834,86 @@ async function renderAttendanceHistory(content){
   searchBtn.addEventListener('click',queryHistory);
   queryHistory();
 }
+async function renderTechnicalProgress(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Avaliação técnica e graduação'),node('p','Registre a evolução dos alunos. Professores podem lançar avaliações nas turmas em que estão vinculados; graduação é restrita à administração.','status-line'));
+  const controls=node('div',undefined,'student-tools');
+  const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Turma');
+  const studentSelect=node('select',undefined,'search');studentSelect.setAttribute('aria-label','Aluno');
+  const date=node('input',undefined,'search');date.type='date';date.value=new Date().toISOString().slice(0,10);
+  controls.append(classSelect,studentSelect,date);
+  const evaluation=node('textarea',undefined,'search');evaluation.rows=4;evaluation.placeholder='Avaliação técnica: fundamentos, evolução, disciplina e pontos a desenvolver…';evaluation.style.width='100%';evaluation.style.marginTop='12px';
+  const saveEvaluation=node('button','Salvar avaliação','btn btn-gold small-btn');saveEvaluation.type='button';saveEvaluation.style.marginTop='10px';
+  const status=node('p','Carregando turmas autorizadas…','status-line');
+  panel.append(controls,evaluation,saveEvaluation,status);
+  let beltSelect=null,degreeInput=null,saveGraduation=null;
+  if(currentProfile&&currentProfile.role==='admin'){
+    const gradBox=node('div',undefined,'activity-card');gradBox.style.marginTop='20px';
+    gradBox.append(node('h3','Registrar graduação'));
+    beltSelect=node('select',undefined,'search');
+    ['Branca','Cinza','Amarela','Laranja','Verde','Azul','Roxa','Marrom','Preta'].forEach(v=>{const o=node('option',v);o.value=v;beltSelect.append(o);});
+    degreeInput=node('input',undefined,'search');degreeInput.placeholder='Graus / observação (opcional)';degreeInput.maxLength=120;
+    saveGraduation=node('button','Registrar graduação','btn btn-gold small-btn');saveGraduation.type='button';
+    gradBox.append(beltSelect,degreeInput,saveGraduation);panel.append(gradBox);
+  }
+  const history=node('div',undefined,'table-wrap');panel.append(node('h3','Registros recentes'),history);content.append(panel);
+  try{
+    const {data:classes,error}=await supabaseClient.from('classes').select('id,name').eq('is_active',true).order('name');
+    if(error)throw error;
+    classSelect.replaceChildren();
+    (classes||[]).forEach(c=>{const o=node('option',c.name);o.value=c.id;classSelect.append(o);});
+    if(!classes||!classes.length){status.textContent='Nenhuma turma autorizada para este perfil.';return;}
+    async function loadStudents(){
+      studentSelect.replaceChildren();
+      const {data:links,error:linkError}=await supabaseClient.from('class_enrollments').select('student_id').eq('class_id',classSelect.value).eq('active',true);
+      if(linkError)throw linkError;
+      const ids=[...new Set((links||[]).map(x=>x.student_id).filter(Boolean))];
+      if(!ids.length){status.textContent='Não há alunos ativos nesta turma.';return;}
+      const {data:students,error:studentError}=await supabaseClient.from('students').select('id,full_name').in('id',ids).order('full_name');
+      if(studentError)throw studentError;
+      (students||[]).forEach(st=>{const o=node('option',st.full_name);o.value=st.id;studentSelect.append(o);});
+      status.textContent=(students||[]).length+' aluno(s) disponíveis nesta turma.';
+      await loadRecords();
+    }
+    async function loadRecords(){
+      history.replaceChildren();
+      const {data:evals,error:evalError}=await supabaseClient.from('technical_evaluations').select('id,student_id,evaluated_on,evaluation,students(full_name)').eq('class_id',classSelect.value).order('evaluated_on',{ascending:false}).limit(50);
+      if(evalError)throw evalError;
+      const {data:grads,error:gradError}=await supabaseClient.from('graduations').select('id,student_id,belt,degrees,awarded_on,students(full_name)').order('awarded_on',{ascending:false}).limit(50);
+      if(gradError)throw gradError;
+      const table=node('table'),thead=node('thead'),tr=node('tr');
+      ['Data','Aluno','Tipo','Registro'].forEach(v=>tr.append(node('th',v)));thead.append(tr);table.append(thead);
+      const tbody=node('tbody');
+      (evals||[]).forEach(x=>{const r=node('tr');r.append(node('td',new Date(x.evaluated_on+'T12:00:00').toLocaleDateString('pt-BR')),node('td',x.students?.full_name||'Aluno'),node('td','Avaliação técnica'),node('td',x.evaluation||''));tbody.append(r);});
+      (grads||[]).filter(x=>currentProfile?.role==='admin'||(studentSelect.value&&x.student_id===studentSelect.value)).forEach(x=>{const r=node('tr');r.append(node('td',new Date(x.awarded_on+'T12:00:00').toLocaleDateString('pt-BR')),node('td',x.students?.full_name||'Aluno'),node('td','Graduação'),node('td',[x.belt,x.degrees].filter(Boolean).join(' — ')));tbody.append(r);});
+      table.append(tbody);history.append(table);
+      if(!(evals||[]).length&&!(grads||[]).length)history.append(node('p','Ainda não há registros técnicos para exibir.','status-line'));
+    }
+    classSelect.addEventListener('change',()=>loadStudents().catch(e=>status.textContent='Erro ao carregar alunos: '+e.message));
+    studentSelect.addEventListener('change',()=>loadRecords().catch(e=>status.textContent='Erro ao carregar registros: '+e.message));
+    saveEvaluation.addEventListener('click',async()=>{
+      if(!studentSelect.value||!evaluation.value.trim()){status.textContent='Selecione o aluno e preencha a avaliação técnica.';return;}
+      saveEvaluation.disabled=true;
+      try{
+        const {error:saveError}=await supabaseClient.from('technical_evaluations').insert({student_id:studentSelect.value,class_id:classSelect.value,evaluated_on:date.value,evaluation:evaluation.value.trim(),recorded_by:currentProfile.id});
+        if(saveError)throw saveError;
+        evaluation.value='';status.textContent='Avaliação técnica registrada.';await loadRecords();
+      }catch(e){status.textContent='Não foi possível salvar a avaliação: '+e.message;}
+      finally{saveEvaluation.disabled=false;}
+    });
+    if(saveGraduation)saveGraduation.addEventListener('click',async()=>{
+      if(!studentSelect.value){status.textContent='Selecione o aluno para registrar a graduação.';return;}
+      saveGraduation.disabled=true;
+      try{
+        const {error:saveError}=await supabaseClient.from('graduations').insert({student_id:studentSelect.value,belt:beltSelect.value,degrees:degreeInput.value.trim()||null,awarded_on:date.value,recorded_by:currentProfile.id});
+        if(saveError)throw saveError;
+        degreeInput.value='';status.textContent='Graduação registrada com sucesso.';await loadRecords();
+      }catch(e){status.textContent='Não foi possível registrar a graduação: '+e.message;}
+      finally{saveGraduation.disabled=false;}
+    });
+    await loadStudents();
+  }catch(e){status.textContent='Não foi possível carregar a área técnica: '+(e.message||String(e));}
+}
 async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
@@ -843,7 +923,7 @@ async function renderView(view){
   }
   if(view==='inicio'){await renderOverview(content);return;}
   if(view==='alunos'){await renderStudents(content);return;}
-  if(view==='chamada'){await renderClassAttendance(content);return;}\n  if(view==='historico'){await renderAttendanceHistory(content);return;}
+  if(view==='chamada'){await renderClassAttendance(content);return;}\n  if(view==='historico'){await renderAttendanceHistory(content);return;}\n  if(view==='tecnica'){await renderTechnicalProgress(content);return;}
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Atividades'),node('p','Registro das atividades informadas pelo projeto. Apresentação em cartões, sem tabela nesta etapa.','status-line'));
   const lecture=node('article',undefined,'activity-card');
