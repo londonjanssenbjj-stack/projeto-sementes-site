@@ -510,7 +510,10 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 </div>
 <div class="message" id="loginMessage" role="status"></div><button class="guardian-register-toggle" id="guardianRegisterToggle" type="button" style="display:none">Ainda não tenho acesso — criar conta</button><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
 
-<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="atividades" type="button">Atividades</button></div><div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
+<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="atividades" type="button">Atividades</button></div>
+<div id="guardianProvisionTools" class="dash-panel" style="display:none;margin:18px 0"><h2>Provisionamento de responsáveis</h2><p>Cria uma conta por telefone cadastrado, agrupa irmãos e confere os 57 vínculos familiares. Contas já existentes serão reaproveitadas, sem duplicação.</p><button class="btn btn-gold" id="provisionGuardiansBtn" type="button">Criar / conferir os 42 acessos</button><div id="provisionGuardiansResult" class="message" role="status" style="margin-top:12px"></div></div>
+<div id="passwordChangeGate" class="dash-panel" style="display:none;margin:18px 0"><h2>Defina sua senha pessoal</h2><p>Por segurança, substitua a senha temporária antes de acessar os dados dos alunos.</p><form id="passwordChangeForm"><div class="field"><label for="guardianNewPassword">Nova senha (mínimo 10 caracteres)</label><input id="guardianNewPassword" type="password" minlength="10" autocomplete="new-password" required></div><div class="field"><label for="guardianConfirmPassword">Confirme a nova senha</label><input id="guardianConfirmPassword" type="password" minlength="10" autocomplete="new-password" required></div><button class="btn btn-gold" id="saveGuardianPasswordBtn" type="submit">Salvar minha senha</button><div id="passwordChangeMessage" class="message" role="status"></div></form></div>
+<div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
 
 
 <div class="modal" id="studentModal" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle"><div class="panel" style="width:min(760px,100%)"><button class="close" id="closeStudentModal" aria-label="Fechar ficha" type="button">✕</button><h2 id="studentModalTitle">Ficha do aluno</h2><div class="detail-meta" id="studentDetailMeta">Carregando dados autorizados…</div><form id="studentForm"><input type="hidden" id="studentId"><div class="student-detail-grid">
@@ -576,8 +579,15 @@ async function loadDashboard(){
   $('profileInfo').textContent=(currentProfile.full_name||user.email)+' • '+niceRole(currentProfile.role)+' • '+user.email;
   const guardian=currentProfile.role==='guardian';
   $('dashNav').style.display=guardian?'none':'';
+  $('guardianProvisionTools').style.display=currentProfile.role==='admin'?'':'none';
   $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
-  setPrivateMode(true);await renderView(guardian?'familia':'inicio');
+  setPrivateMode(true);
+  if(guardian && user.user_metadata?.must_change_password===true){
+    $('dashNav').style.display='none';$('dashContent').style.display='none';$('passwordChangeGate').style.display='';
+    return;
+  }
+  $('passwordChangeGate').style.display='none';$('dashContent').style.display='';
+  await renderView(guardian?'familia':'inicio');
 }
 function makeKpi(label,value){const box=node('div',undefined,'kpi');box.append(node('strong',String(value)),node('span',label));return box;}
 async function renderGuardianFamily(content){
@@ -738,6 +748,38 @@ studentForm.addEventListener('submit',async e=>{
 });
 
 $('dashNav').addEventListener('click',e=>{const b=e.target.closest('button[data-view]');if(b)renderView(b.dataset.view);});
+$('provisionGuardiansBtn').addEventListener('click',async()=>{
+  const btn=$('provisionGuardiansBtn'),out=$('provisionGuardiansResult');
+  if(!currentProfile||currentProfile.role!=='admin'){out.textContent='Somente o administrador pode executar esta operação.';out.className='message show error';return;}
+  if(!window.confirm('Confirma criar ou conferir as 42 contas de responsáveis e os vínculos dos 57 alunos? A função validará os telefones e fará rollback dos registros novos se houver falha.'))return;
+  btn.disabled=true;btn.textContent='Provisionando…';out.textContent='Executando validação e provisionamento no Supabase…';out.className='message show';
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('guardian-access',{body:{action:'provision_all_guardians'}});
+    if(error)throw error;
+    if(!data||data.success!==true)throw new Error(data?.error||'O Supabase não confirmou o provisionamento.');
+    out.textContent='Concluído: '+data.accountsCreated+' contas criadas; '+data.accountsReused+' reaproveitadas; '+data.linksCreatedThisRun+' vínculos inseridos nesta execução; '+data.studentsProcessed+' alunos conferidos; '+data.uniquePhones+' telefones únicos. Correções: Andressa → Derick; Antonio → Elton.';
+    out.className='message show ok';btn.textContent='Provisionamento concluído';
+  }catch(err){
+    out.textContent='Falha no provisionamento: '+(err.message||String(err))+'. Confira os logs da Edge Function antes de tentar novamente.';
+    out.className='message show error';btn.disabled=false;btn.textContent='Tentar novamente';
+  }
+});
+$('passwordChangeForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const msg=$('passwordChangeMessage'),btn=$('saveGuardianPasswordBtn');
+  const next=$('guardianNewPassword').value,confirm=$('guardianConfirmPassword').value;
+  if(next.length<10){msg.textContent='Use pelo menos 10 caracteres.';msg.className='message show error';return;}
+  if(next!==confirm){msg.textContent='As senhas não coincidem.';msg.className='message show error';return;}
+  btn.disabled=true;btn.textContent='Salvando…';
+  try{
+    const {data:{user},error:userError}=await supabaseClient.auth.getUser();if(userError||!user)throw new Error('Sessão expirada. Entre novamente.');
+    const {error}=await supabaseClient.auth.updateUser({password:next,data:{...(user.user_metadata||{}),must_change_password:false}});
+    if(error)throw error;
+    msg.textContent='Senha pessoal salva. Abrindo o portal…';msg.className='message show ok';
+    await loadDashboard();
+  }catch(err){msg.textContent=err.message||'Não foi possível alterar a senha.';msg.className='message show error';}
+  finally{btn.disabled=false;btn.textContent='Salvar minha senha';}
+});
 $('logoutBtn').addEventListener('click',async()=>{if(supabaseClient)await supabaseClient.auth.signOut();currentProfile=null;studentsCache=[];setPrivateMode(false);openModal();showMessage('Sessão encerrada com segurança.','ok');});
 form.addEventListener('submit',async e=>{
   e.preventDefault();
