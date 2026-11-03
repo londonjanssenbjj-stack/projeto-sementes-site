@@ -1446,12 +1446,12 @@ $('resetBtn').addEventListener('click',async()=>{
     if(!captchaToken){msg.textContent='Conclua a verificação de segurança.';msg.style.color='#9b1c1c';return;}
     btn.disabled=true;btn.textContent='Criando acesso…';
     try{
-     const guardian=document.getElementById('enGuardianName').value.trim();
-     const phone=document.getElementById('enGuardianPhone').value.trim();
-     const docType=document.getElementById('enGuardianDocumentType').value;
-     const docNumber=document.getElementById('enGuardianDocument').value.trim();
-     const email=document.getElementById('enGuardianEmail').value.trim().toLowerCase();
-     const rel=document.getElementById('enRelationship').value;
+     const guardian=payload.guardian.full_name;
+     const phone=payload.guardian.phone;
+     const docType=payload.guardian.document_type;
+     const docNumber=payload.guardian.document;
+     const email=payload.guardian.email;
+     const rel=payload.guardian.relationship;
      const accountResponse=await fetch(SUPABASE_URL+'/functions/v1/guardian-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'claim_enrollment',guardian_name:guardian,guardian_document_type:docType,guardian_document_number:docNumber,guardian_phone:phone,email,password:pass,turnstile_token:captchaToken})});
      const accountData=await accountResponse.json().catch(()=>({}));
      if(!accountResponse.ok)throw new Error(accountData.error||'Não foi possível criar o acesso.');
