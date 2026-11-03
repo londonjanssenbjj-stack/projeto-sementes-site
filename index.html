@@ -580,7 +580,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 </div>
 <div class="message" id="loginMessage" role="status"></div><button class="guardian-register-toggle" id="guardianRegisterToggle" type="button" style="display:none">Ainda não tenho acesso — criar conta</button><div class="notice">O acesso ao painel depende de um perfil ativo e das políticas de segurança configuradas no banco de dados.</div></div></div>
 
-<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="historico" type="button">Frequência</button><button data-view="tecnica" type="button">Avaliação e graduação</button><button data-view="atividades" type="button">Atividades</button></div>
+<section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="historico" type="button">Frequência</button><button data-view="tecnica" type="button">Avaliação e graduação</button><button data-view="atividades" type="button">Atividades</button><button data-view="relatorios" type="button">Relatórios</button></div>
 <div id="guardianProvisionTools" class="dash-panel" style="display:none;margin:18px 0"><h2>Provisionamento de responsáveis</h2><p>Cria uma conta por telefone cadastrado, agrupa irmãos e confere os 57 vínculos familiares. Contas já existentes serão reaproveitadas, sem duplicação.</p><button class="btn btn-gold" id="provisionGuardiansBtn" type="button">Criar / conferir os 42 acessos</button><div id="provisionGuardiansResult" class="message" role="status" style="margin-top:12px"></div></div>
 <div id="passwordChangeGate" class="dash-panel" style="display:none;margin:18px 0"><h2>Defina sua senha pessoal</h2><p>Por segurança, substitua a senha temporária antes de acessar os dados dos alunos.</p><form id="passwordChangeForm"><div class="field"><label for="guardianNewPassword">Nova senha (mínimo 10 caracteres)</label><input id="guardianNewPassword" type="password" minlength="10" autocomplete="new-password" required></div><div class="field"><label for="guardianConfirmPassword">Confirme a nova senha</label><input id="guardianConfirmPassword" type="password" minlength="10" autocomplete="new-password" required></div><button class="btn btn-gold" id="saveGuardianPasswordBtn" type="submit">Salvar minha senha</button><div id="passwordChangeMessage" class="message" role="status"></div></form></div>
 <div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
@@ -936,8 +936,31 @@ async function renderView(view){
   if(view==='chamada'){await renderClassAttendance(content);return;}
   if(view==='historico'){await renderAttendanceHistory(content);return;}
   if(view==='tecnica'){await renderTechnicalProgress(content);return;}
+  if(view==='relatorios'){await renderStudentReports(content);return;}
   await renderActivities(content);
 
+}
+
+async function renderStudentReports(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Relatórios da turma única'),node('p','Resumo de alunos, situação cadastral, frequência e graduação.','status-line'));
+  const search=node('input',undefined,'search');search.placeholder='Buscar aluno';
+  const status=node('p','Carregando…','status-line');
+  const wrap=node('div',undefined,'table-wrap');panel.append(search,status,wrap);content.append(panel);
+  let rows=[];
+  function draw(){
+    const term=search.value.trim().toLocaleLowerCase('pt-BR');const shown=rows.filter(x=>x.name.toLocaleLowerCase('pt-BR').includes(term));
+    wrap.replaceChildren();const table=node('table'),head=node('thead'),hr=node('tr');
+    ['Aluno','Cadastro','Presenças','Faltas','Justificadas','Graduação'].forEach(x=>hr.append(node('th',x)));head.append(hr);table.append(head);
+    const body=node('tbody');shown.forEach(x=>{const tr=node('tr');[x.name,x.registration,x.present,x.absent,x.excused,x.belt].forEach(v=>tr.append(node('td',String(v))));body.append(tr);});table.append(body);wrap.append(table);status.textContent=shown.length+' aluno(s) exibidos de '+rows.length+'.';
+  }
+  try{
+    const [s,a,g]=await Promise.all([supabaseClient.from('students').select('id,full_name,registration_status').order('full_name').limit(1000),supabaseClient.from('attendance').select('student_id,status').limit(5000),supabaseClient.from('graduations').select('student_id,belt,awarded_on').order('awarded_on',{ascending:false}).limit(3000)]);
+    if(s.error)throw s.error;if(a.error)throw a.error;if(g.error)throw g.error;
+    const counts=new Map();(a.data||[]).forEach(v=>{const x=counts.get(v.student_id)||{present:0,absent:0,excused:0};if(Object.prototype.hasOwnProperty.call(x,v.status))x[v.status]++;counts.set(v.student_id,x);});
+    const belts=new Map();(g.data||[]).forEach(v=>{if(!belts.has(v.student_id))belts.set(v.student_id,v.belt);});
+    rows=(s.data||[]).map(v=>{const x=counts.get(v.id)||{present:0,absent:0,excused:0};return {name:v.full_name||'Sem nome',registration:v.registration_status||'Pendente',present:x.present,absent:x.absent,excused:x.excused,belt:belts.get(v.id)||'—'};});draw();search.addEventListener('input',draw);
+  }catch(e){status.textContent='Erro ao gerar relatório: '+(e.message||String(e));}
 }
 
 async function renderActivities(content){
