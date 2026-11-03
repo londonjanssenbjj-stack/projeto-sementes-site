@@ -721,6 +721,13 @@ async function renderGuardianFamily(content){
     return await turnstileLoader;
   };
   const siteKey='0x4AAAAAAFswPZX9oVKHZCXu';
+  const protocolByStudent=new Map();
+  await Promise.all(children.map(async child=>{
+    const {data:enrollment}=await supabaseClient.from('enrollment_submissions')
+      .select('protocol').eq('student_id',child.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if(enrollment?.protocol)protocolByStudent.set(child.id,enrollment.protocol);
+  }));
+
   children.forEach(child=>{
     const card=node('article',undefined,'dash-panel');
     card.append(node('h3',child.full_name||'Aluno'));
@@ -732,7 +739,7 @@ async function renderGuardianFamily(content){
     const bioStatus=node('p',child.biometric_completed?'Foto facial já registrada.':'A captura facial está pendente.','status-line');
     bioBox.append(bioStatus);
     if(!child.biometric_completed){
-      const protocol=node('input',undefined,'search');protocol.placeholder='Protocolo da matrícula (PS-AAAA-XXXXXXXX)';protocol.autocomplete='off';protocol.maxLength=22;protocol.style.width='100%';
+
       const consentWrap=node('label',undefined,'status-line');consentWrap.style.cssText='display:flex;gap:9px;align-items:flex-start;margin:12px 0';
       const consent=node('input');consent.type='checkbox';consent.style.marginTop='3px';
       consentWrap.append(consent,document.createTextNode('Confirmo que sou o responsável legal e autorizo a captura da fotografia facial conforme a autorização registrada na matrícula.'));
@@ -741,13 +748,14 @@ async function renderGuardianFamily(content){
       const video=node('video');video.autoplay=true;video.playsInline=true;video.muted=true;video.style.cssText='display:none;width:100%;max-width:420px;border-radius:10px;background:#111;margin-top:12px';
       const capture=node('button','Capturar e enviar foto','btn btn-dark small-btn');capture.type='button';capture.style.cssText='display:none;margin:12px 8px 0 0';
       const cancel=node('button','Cancelar câmera','btn btn-outline small-btn');cancel.type='button';cancel.style.cssText='display:none;margin-top:12px';
-      bioBox.append(protocol,consentWrap,captcha,camera,video,capture,cancel);
+      bioBox.append(consentWrap,captcha,camera,video,capture,cancel);
       let widgetId=null,stream=null;
       const stopCamera=()=>{if(stream){stream.getTracks().forEach(track=>track.stop());stream=null;}video.srcObject=null;video.style.display='none';capture.style.display='none';cancel.style.display='none';camera.style.display='';};
       cancel.addEventListener('click',stopCamera);
       camera.addEventListener('click',async()=>{
         if(!consent.checked){bioStatus.textContent='Marque a confirmação de autorização antes de abrir a câmera.';bioStatus.className='status-line error';return;}
-        if(!/^PS-\d{4}-[A-F0-9]{8}$/i.test(protocol.value.trim())){bioStatus.textContent='Informe o protocolo completo da matrícula.';bioStatus.className='status-line error';protocol.focus();return;}
+        const protocolValue=protocolByStudent.get(child.id)||'';
+        if(!/^PS-\d{4}-[A-F0-9]{8}$/i.test(protocolValue.trim())){bioStatus.textContent='Não foi possível localizar o protocolo da matrícula deste aluno. Solicite a conferência à Secretaria.';bioStatus.className='status-line error';return;}
         camera.disabled=true;bioStatus.textContent='Preparando verificação e câmera…';
         try{
           const ts=await ensureTurnstile();
@@ -774,12 +782,12 @@ async function renderGuardianFamily(content){
           const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{
             method:'POST',
             headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},
-            body:JSON.stringify({protocol:protocol.value.trim().toUpperCase(),image:jpeg,turnstile_token:token})
+            body:JSON.stringify({protocol:protocolValue.trim().toUpperCase(),image:jpeg,turnstile_token:token})
           });
           const result=await response.json().catch(()=>({}));
           if(!response.ok)throw new Error(result.error||'O servidor não confirmou o armazenamento da foto.');
           stopCamera();bioStatus.textContent='Captura concluída. A foto foi armazenada com segurança.';bioStatus.className='status-line success';
-          consent.disabled=true;protocol.disabled=true;camera.disabled=true;capture.style.display='none';cancel.style.display='none';
+          consent.disabled=true;camera.disabled=true;capture.style.display='none';cancel.style.display='none';
         }catch(err){bioStatus.textContent=err.message||'Falha ao enviar a foto.';bioStatus.className='status-line error';capture.disabled=false;if(window.turnstile&&widgetId!==null)window.turnstile.reset(widgetId);}
       });
     }
