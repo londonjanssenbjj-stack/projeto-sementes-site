@@ -89,6 +89,14 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .age-item{border:1px solid #e3e7ed;border-radius:5px;padding:13px;background:#fbfcfd}
 #dashboard .age-item strong{display:block;font:800 21px Manrope,sans-serif;color:#0b1b30}
 #dashboard .age-item span{font-size:11px;color:#5d6673}
+#dashboard .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
+#dashboard .activity-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#dashboard .activity-card h3{font:800 16px Manrope,sans-serif;color:#0b1b30;margin:6px 0 10px}
+#dashboard .activity-card .status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#f3edda;color:#765b14;font-size:11px;font-weight:800}
+#dashboard .activity-card .eyebrow{font-size:10px}
+#dashboard .status-line.success{color:#18734a}
+#dashboard .status-line.error{color:#b42318}
+@media(max-width:640px){#dashboard .activity-grid{grid-template-columns:1fr}#dashboard .activity-card-head{align-items:flex-start;flex-direction:column}}
 #dashboard .activity-card{border:1px solid #e4e0d6;border-left:4px solid #d7b34b;background:#fff;padding:17px 18px;border-radius:5px;margin-top:12px}
 #dashboard .activity-card strong{display:block;color:#0b1b30;font:800 16px Manrope,sans-serif;margin-bottom:7px}
 #dashboard .activity-card p{margin:4px 0;color:#5d6673;font-size:13px;line-height:1.55}
