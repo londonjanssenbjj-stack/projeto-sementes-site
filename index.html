@@ -105,6 +105,18 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .attendance-identity span{font-size:11px;color:#697586}
 #dashboard .attendance-student-card select{width:100%}
 @media(max-width:520px){#dashboard .attendance-cards{grid-template-columns:1fr 1fr;gap:8px}#dashboard .attendance-student-card{padding:10px}#dashboard .attendance-avatar{width:46px;height:46px;flex-basis:46px;font-size:15px}}
+#dashboard .report-actions{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0}
+@media print{
+  body.print-student-report *{visibility:hidden!important}
+  body.print-student-report .print-report-panel,
+  body.print-student-report .print-report-panel *{visibility:visible!important}
+  body.print-student-report .print-report-panel{position:absolute!important;left:0!important;top:0!important;width:100%!important;margin:0!important;padding:16px!important;background:#fff!important;box-shadow:none!important}
+  body.print-student-report .report-actions,
+  body.print-student-report .print-report-panel input{display:none!important}
+  body.print-student-report .print-report-panel table{width:100%;border-collapse:collapse;font-size:10px}
+  body.print-student-report .print-report-panel th,body.print-student-report .print-report-panel td{border:1px solid #bbb;padding:5px;text-align:left}
+  body.print-student-report .print-report-panel h2{color:#102b49!important}
+}
 #dashboard .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
 #dashboard .activity-management{display:grid;gap:8px;border-top:1px solid #e8e4db;padding-top:12px;margin-top:12px}
 #dashboard .activity-management .btn{justify-self:start}
@@ -977,9 +989,13 @@ async function renderStudentReports(content){
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Relatórios da turma única'),node('p','Resumo de alunos, situação cadastral, frequência e graduação.','status-line'));
   const search=node('input',undefined,'search');search.placeholder='Buscar aluno';
+  panel.classList.add('print-report-panel');
   const exportBtn=node('button','Exportar CSV','btn btn-gold small-btn');exportBtn.type='button';
+  const pdfBtn=node('button','Imprimir / Salvar PDF','btn btn-outline small-btn');pdfBtn.type='button';
+  const reportActions=node('div',undefined,'report-actions');reportActions.append(exportBtn,pdfBtn);
   const status=node('p','Carregando…','status-line');
-  const wrap=node('div',undefined,'table-wrap');panel.append(search,exportBtn,status,wrap);content.append(panel);
+  const wrap=node('div',undefined,'table-wrap');panel.append(search,reportActions,status,wrap);content.append(panel);
+  pdfBtn.addEventListener('click',()=>{document.body.classList.add('print-student-report');window.print();window.setTimeout(()=>document.body.classList.remove('print-student-report'),1200);});
   let rows=[];
   function draw(){
     const term=search.value.trim().toLocaleLowerCase('pt-BR');const shown=rows.filter(x=>x.name.toLocaleLowerCase('pt-BR').includes(term));
