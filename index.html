@@ -90,6 +90,15 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .age-item strong{display:block;font:800 21px Manrope,sans-serif;color:#0b1b30}
 #dashboard .age-item span{font-size:11px;color:#5d6673}
 #studentHistory{border-top:1px solid #e5e7eb;margin-top:18px;padding-top:14px}#studentHistory h3{font:800 17px Manrope,sans-serif;color:#10243e;margin:0 0 12px}#studentHistory h4{font:700 13px Manrope,sans-serif;color:#7a5b16;margin:14px 0 6px}#studentHistory .history-item{padding:9px 11px;background:#f8f7f3;border-radius:9px;margin:6px 0;color:#26364a}
+#dashboard .attendance-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:14px}
+#dashboard .attendance-student-card{display:grid;gap:12px;padding:14px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;box-shadow:0 3px 12px rgba(11,27,48,.05)}
+#dashboard .attendance-student-top{display:flex;align-items:center;gap:12px;min-width:0}
+#dashboard .attendance-avatar{width:58px;height:58px;flex:0 0 58px;border-radius:50%;display:grid;place-items:center;background:#102b49;color:#e7c66e;font:800 18px Manrope,sans-serif;border:2px solid #d9bd70}
+#dashboard .attendance-identity{display:grid;gap:4px;min-width:0}
+#dashboard .attendance-identity strong{font-size:13px;color:#14263e;overflow-wrap:anywhere}
+#dashboard .attendance-identity span{font-size:11px;color:#697586}
+#dashboard .attendance-student-card select{width:100%}
+@media(max-width:520px){#dashboard .attendance-cards{grid-template-columns:1fr 1fr;gap:8px}#dashboard .attendance-student-card{padding:10px}#dashboard .attendance-avatar{width:46px;height:46px;flex-basis:46px;font-size:15px}}
 #dashboard .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
 #dashboard .activity-management{display:grid;gap:8px;border-top:1px solid #e8e4db;padding-top:12px;margin-top:12px}
 #dashboard .activity-management .btn{justify-self:start}
@@ -730,17 +739,20 @@ async function renderClassAttendance(content){
       if(attendanceError)throw attendanceError;
       const existingMap=new Map((existing||[]).map(x=>[x.student_id,x]));
       const counts=makeKpi('Alunos ativos na turma',students.length);summary.append(counts);
-      const table=node('table'),thead=node('thead'),head=node('tr');
-      ['Aluno','Faixa','Presença'].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
-      const tbody=node('tbody'),selectors=[];
+      const cards=node('div',undefined,'attendance-cards'),selectors=[];
       (students||[]).forEach(st=>{
-        const tr=node('tr');tr.append(node('td',st.full_name||'Aluno'),node('td',st.belt||'Não informada'));
-        const td=node('td'),sel=node('select',undefined,'search');sel.setAttribute('aria-label','Presença de '+st.full_name);
-        [['','Selecione'],['present','Presente'],['absent','Ausente'],['excused','Falta justificada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;sel.append(o);});
+        const card=node('article',undefined,'attendance-student-card');
+        const initials=String(st.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
+        const avatar=node('div',initials||'AL','attendance-avatar');avatar.setAttribute('aria-label','Foto não cadastrada; iniciais do aluno');
+        const identity=node('div',undefined,'attendance-identity');
+        identity.append(node('strong',st.full_name||'Aluno'),node('span','Faixa: '+(st.belt||'Não informada')));
+        const top=node('div',undefined,'attendance-student-top');top.append(avatar,identity);
+        const sel=node('select',undefined,'search');sel.setAttribute('aria-label','Presença de '+st.full_name);
+        [['','Selecione a situação'],['present','Presente'],['absent','Ausente'],['excused','Falta justificada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;sel.append(o);});
         const old=existingMap.get(st.id);if(old)sel.value=old.status;
-        td.append(sel);tr.append(td);tbody.append(tr);selectors.push({student_id:st.id,select:sel});
+        card.append(top,sel);cards.append(card);selectors.push({student_id:st.id,select:sel});
       });
-      table.append(tbody);rosterWrap.append(table);
+      rosterWrap.append(cards);
       const save=node('button','Salvar chamada','btn btn-gold small-btn');save.type='button';save.style.marginTop='14px';
       save.addEventListener('click',async()=>{
         const missing=selectors.filter(x=>!x.select.value);
