@@ -89,6 +89,7 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .age-item{border:1px solid #e3e7ed;border-radius:5px;padding:13px;background:#fbfcfd}
 #dashboard .age-item strong{display:block;font:800 21px Manrope,sans-serif;color:#0b1b30}
 #dashboard .age-item span{font-size:11px;color:#5d6673}
+#studentHistory{border-top:1px solid #e5e7eb;margin-top:18px;padding-top:14px}#studentHistory h3{font:800 17px Manrope,sans-serif;color:#10243e;margin:0 0 12px}#studentHistory h4{font:700 13px Manrope,sans-serif;color:#7a5b16;margin:14px 0 6px}#studentHistory .history-item{padding:9px 11px;background:#f8f7f3;border-radius:9px;margin:6px 0;color:#26364a}
 #dashboard .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
 #dashboard .activity-management{display:grid;gap:8px;border-top:1px solid #e8e4db;padding-top:12px;margin-top:12px}
 #dashboard .activity-management .btn{justify-self:start}
@@ -593,7 +594,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 <div class="field"><label for="st_registration_status">Situação cadastral</label><select id="st_registration_status"><option value="pre_registration_pending">Pré-cadastro pendente</option><option value="awaiting_guardian">Aguardando responsável</option><option value="submitted_for_review">Enviado para revisão</option><option value="needs_correction">Precisa de correção</option><option value="complete">Completo</option><option value="inactive">Inativo</option></select></div>
 <div class="field"><label for="st_guardian_name">Nome do responsável</label><input id="st_guardian_name" maxlength="180"></div><div class="field"><label for="st_guardian_phone">Telefone do responsável</label><input id="st_guardian_phone" type="tel" maxlength="40"></div>
 <div class="field full"><label for="st_address">Endereço</label><input id="st_address" maxlength="250"></div><div class="field"><label for="st_neighborhood">Bairro</label><input id="st_neighborhood" maxlength="120"></div><div class="field"><label for="st_school">Escola</label><input id="st_school" maxlength="180"></div>
-<div class="field full"><label for="st_admin_review_note">Observação administrativa</label><textarea id="st_admin_review_note" maxlength="1500"></textarea></div></div><div class="message" id="studentMessage" role="status"></div><div class="modal-actions"><button class="btn" id="cancelStudentEdit" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Fechar</button><button class="btn btn-gold" id="saveStudentBtn" type="submit">Salvar alterações</button></div></form><div class="notice">A ficha não consulta nem altera dados de saúde. A gravação depende das políticas RLS e das permissões administrativas do Supabase.</div></div></div>
+<div class="field full"><label for="st_admin_review_note">Observação administrativa</label><textarea id="st_admin_review_note" maxlength="1500"></textarea></div></div><div class="message" id="studentMessage" role="status"></div><div class="modal-actions"><button class="btn" id="cancelStudentEdit" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Fechar</button><button class="btn btn-gold" id="saveStudentBtn" type="submit">Salvar alterações</button></div></form><div id="studentHistory" class="student-history"><h3>Histórico técnico e de graduação</h3><p class="status-line">Abra uma ficha para consultar o histórico.</p></div><div class="notice">A ficha não consulta nem altera dados de saúde. A gravação depende das políticas RLS e das permissões administrativas do Supabase.</div></div></div>
 
 
 <script>
@@ -1125,6 +1126,18 @@ async function openStudentFicha(id){
     if(error)throw error;
     studentFields.forEach(k=>{const el=$('st_'+k);if(el)el.value=data[k]??'';});
     $('studentDetailMeta').textContent='Registro nº '+(data.source_row_number??'—')+' • Última atualização: '+(data.updated_at?new Date(data.updated_at).toLocaleString('pt-BR'):'não informada');
+    const historyBox=$('studentHistory');historyBox.replaceChildren(node('h3','Histórico técnico e de graduação'));
+    try{
+      const [evaluations,graduations]=await Promise.all([
+        supabaseClient.from('technical_evaluations').select('evaluated_on,evaluation').eq('student_id',id).order('evaluated_on',{ascending:false}).limit(50),
+        supabaseClient.from('graduations').select('belt,degrees,awarded_on,note').eq('student_id',id).order('awarded_on',{ascending:false}).limit(50)
+      ]);
+      if(evaluations.error)throw evaluations.error;if(graduations.error)throw graduations.error;
+      const section=(title,items,render)=>{historyBox.append(node('h4',title));if(!items.length){historyBox.append(node('p','Nenhum registro lançado.','status-line'));return;}items.forEach(item=>historyBox.append(render(item)));};
+      section('Avaliações técnicas',evaluations.data||[],x=>{const p=node('p',new Date(x.evaluated_on+'T12:00:00').toLocaleDateString('pt-BR')+' — '+x.evaluation,'history-item');return p;});
+      section('Graduações',graduations.data||[],x=>{const p=node('p',new Date(x.awarded_on+'T12:00:00').toLocaleDateString('pt-BR')+' — '+x.belt+(x.degrees?' • '+x.degrees:'')+(x.note?' — '+x.note:''),'history-item');return p;});
+    }catch(historyError){historyBox.append(node('p','Histórico indisponível para este perfil: '+(historyError.message||String(historyError)),'status-line error'));}
+
     const isAdmin=currentProfile&&currentProfile.role==='admin';setStudentReadOnly(!isAdmin);
     $('studentModalTitle').textContent=isAdmin?'Ficha do aluno — edição administrativa':'Ficha do aluno — consulta';
     if(!isAdmin)setStudentMessage('Seu perfil permite consultar esta ficha, mas não editar os dados.','ok');
