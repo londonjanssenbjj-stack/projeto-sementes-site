@@ -1431,7 +1431,35 @@ $('resetBtn').addEventListener('click',async()=>{
    const response=await fetch(ENROLLMENT_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify(payload)});
    const data=await response.json().catch(()=>({}));
    if(!response.ok)throw new Error(data.error||'Não foi possível concluir a matrícula.');
-   showEnrollmentResult('Matrícula recebida com sucesso. Protocolo: '+data.protocol+'. Guarde este número para contato com a Secretaria.', 'ok');
+   showEnrollmentResult('Matrícula recebida com sucesso. Protocolo: '+data.protocol+'. O documento está disponível abaixo.', 'ok');
+   const pdfLink=document.createElement('a');
+   pdfLink.href=data.pdf_url;pdfLink.target='_blank';pdfLink.rel='noopener';pdfLink.textContent='Abrir / baixar documento da matrícula (PDF)';
+   pdfLink.className='btn btn-gold';pdfLink.style.margin='12px 10px 12px 0';result.appendChild(pdfLink);
+   const accessBox=document.createElement('div');accessBox.style.cssText='margin-top:18px;padding:18px;border:1px solid #e4e0d6;border-radius:6px;background:#fff;color:#172131';
+   accessBox.innerHTML='<h3 style="margin:0 0 8px;color:#0b1b30">Criar acesso à Área da Família</h3><p style="font-size:13px;line-height:1.6">Seu login será o telefone informado na matrícula. Crie uma senha pessoal com pelo menos 10 caracteres.</p><label style="display:block;font-size:12px;font-weight:700;margin:8px 0 4px" for="enAccessPassword">Criar senha</label><input id="enAccessPassword" type="password" minlength="10" maxlength="128" autocomplete="new-password" style="width:100%;padding:12px;border:1px solid #cfd5df;border-radius:6px"><label style="display:block;font-size:12px;font-weight:700;margin:10px 0 4px" for="enAccessPassword2">Confirmar senha</label><input id="enAccessPassword2" type="password" minlength="10" maxlength="128" autocomplete="new-password" style="width:100%;padding:12px;border:1px solid #cfd5df;border-radius:6px"><div id="enAccessTurnstile" style="margin-top:12px"></div><button id="enCreateAccess" type="button" class="btn btn-gold" style="margin-top:12px">Criar meu acesso</button><p id="enAccessMessage" role="status" style="font-size:13px;margin:10px 0 0"></p>';
+   result.appendChild(accessBox);
+   const accessCaptcha=window.turnstile?window.turnstile.render('#enAccessTurnstile',{sitekey:TURNSTILE_SITE_KEY}):null;
+   document.getElementById('enCreateAccess').addEventListener('click',async()=>{
+    const pass=document.getElementById('enAccessPassword').value,pass2=document.getElementById('enAccessPassword2').value,msg=document.getElementById('enAccessMessage'),btn=document.getElementById('enCreateAccess');
+    if(pass.length<10||pass!==pass2){msg.textContent='As senhas devem ser iguais e possuir pelo menos 10 caracteres.';msg.style.color='#9b1c1c';return;}
+    const captchaToken=accessCaptcha&&window.turnstile?window.turnstile.getResponse(accessCaptcha):'';
+    if(!captchaToken){msg.textContent='Conclua a verificação de segurança.';msg.style.color='#9b1c1c';return;}
+    btn.disabled=true;btn.textContent='Criando acesso…';
+    try{
+     const guardian=document.getElementById('enGuardianName').value.trim();
+     const phone=document.getElementById('enGuardianPhone').value.trim();
+     const docType=document.getElementById('enGuardianDocumentType').value;
+     const docNumber=document.getElementById('enGuardianDocument').value.trim();
+     const email=document.getElementById('enGuardianEmail').value.trim().toLowerCase();
+     const rel=document.getElementById('enRelationship').value;
+     const accountResponse=await fetch(SUPABASE_URL+'/functions/v1/guardian-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'claim_enrollment',guardian_name:guardian,guardian_document_type:docType,guardian_document_number:docNumber,guardian_phone:phone,email,password:pass,turnstile_token:captchaToken})});
+     const accountData=await accountResponse.json().catch(()=>({}));
+     if(!accountResponse.ok)throw new Error(accountData.error||'Não foi possível criar o acesso.');
+     msg.textContent='Acesso criado! Login: '+accountData.login+'. Use a senha que acabou de cadastrar na Área da Família.';msg.style.color='#166534';
+     btn.textContent='Acesso criado';btn.disabled=true;
+     if(window.turnstile)window.turnstile.remove(accessCaptcha);
+    }catch(accountError){msg.textContent=accountError.message||'Falha ao criar acesso.';msg.style.color='#9b1c1c';btn.disabled=false;btn.textContent='Tentar novamente';if(window.turnstile)window.turnstile.reset(accessCaptcha);}
+   });
    enrollmentForm.reset();ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;otherWrap.hidden=true;otherInput.required=false;
    if(window.turnstile&&window.__enrollmentTurnstileWidget)window.turnstile.reset(window.__enrollmentTurnstileWidget);
   }catch(err){showEnrollmentResult(err.message||'Falha ao enviar a matrícula. Tente novamente mais tarde.', 'error');}
