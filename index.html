@@ -721,12 +721,7 @@ async function renderGuardianFamily(content){
     return await turnstileLoader;
   };
   const siteKey='0x4AAAAAAFswPZX9oVKHZCXu';
-  const protocolByStudent=new Map();
-  await Promise.all(children.map(async child=>{
-    const {data:enrollment}=await supabaseClient.from('enrollment_submissions')
-      .select('protocol').eq('student_id',child.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
-    if(enrollment?.protocol)protocolByStudent.set(child.id,enrollment.protocol);
-  }));
+
 
   children.forEach(child=>{
     const card=node('article',undefined,'dash-panel');
@@ -754,8 +749,6 @@ async function renderGuardianFamily(content){
       cancel.addEventListener('click',stopCamera);
       camera.addEventListener('click',async()=>{
         if(!consent.checked){bioStatus.textContent='Marque a confirmação de autorização antes de abrir a câmera.';bioStatus.className='status-line error';return;}
-        const protocolValue=protocolByStudent.get(child.id)||'';
-        if(!/^PS-\d{4}-[A-F0-9]{8}$/i.test(protocolValue.trim())){bioStatus.textContent='Não foi possível localizar o protocolo da matrícula deste aluno. Solicite a conferência à Secretaria.';bioStatus.className='status-line error';return;}
         camera.disabled=true;bioStatus.textContent='Preparando verificação e câmera…';
         try{
           const ts=await ensureTurnstile();
@@ -782,7 +775,7 @@ async function renderGuardianFamily(content){
           const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{
             method:'POST',
             headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},
-            body:JSON.stringify({protocol:protocolValue.trim().toUpperCase(),image:jpeg,turnstile_token:token})
+            body:JSON.stringify({student_id:child.id,image:jpeg,turnstile_token:token})
           });
           const result=await response.json().catch(()=>({}));
           if(!response.ok)throw new Error(result.error||'O servidor não confirmou o armazenamento da foto.');
@@ -1569,7 +1562,7 @@ $('resetBtn').addEventListener('click',async()=>{
         if(jpeg.length>4100000)throw new Error('A imagem ficou muito grande. Tente novamente.');
         const {data:{session}}=await supabaseClient.auth.getSession();
         if(!session?.access_token)throw new Error('Sessão expirada. Entre novamente.');
-        const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({protocol:data.protocol,image:jpeg,turnstile_token:token})});
+        const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({student_id:data.student_id,image:jpeg,turnstile_token:token})});
         const resultBio=await response.json().catch(()=>({}));
         if(!response.ok)throw new Error(resultBio.error||'Não foi possível concluir a biometria.');
         stopBioCamera();bioStatus.textContent='Biometria concluída e fotografia armazenada com segurança.';bioStatus.style.color='#166534';bioConsent.disabled=true;bioStart.disabled=true;bioCapture.style.display='none';bioCancel.style.display='none';window.turnstile.remove(bioWidget);
