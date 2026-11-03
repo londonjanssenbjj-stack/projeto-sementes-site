@@ -90,6 +90,12 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .age-item strong{display:block;font:800 21px Manrope,sans-serif;color:#0b1b30}
 #dashboard .age-item span{font-size:11px;color:#5d6673}
 #studentHistory{border-top:1px solid #e5e7eb;margin-top:18px;padding-top:14px}#studentHistory h3{font:800 17px Manrope,sans-serif;color:#10243e;margin:0 0 12px}#studentHistory h4{font:700 13px Manrope,sans-serif;color:#7a5b16;margin:14px 0 6px}#studentHistory .history-item{padding:9px 11px;background:#f8f7f3;border-radius:9px;margin:6px 0;color:#26364a}
+#dashboard .attendance-tools{display:grid;gap:10px;margin:12px 0}
+#dashboard .attendance-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#dashboard .attendance-count{display:grid;gap:3px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;text-align:center}
+#dashboard .attendance-count strong{font:800 20px Manrope,sans-serif;color:#102b49}
+#dashboard .attendance-count span{font-size:10px;color:#697586}
+@media(max-width:520px){#dashboard .attendance-counts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #dashboard .attendance-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:14px}
 #dashboard .attendance-student-card{display:grid;gap:12px;padding:14px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;box-shadow:0 3px 12px rgba(11,27,48,.05)}
 #dashboard .attendance-student-top{display:flex;align-items:center;gap:12px;min-width:0}
@@ -739,7 +745,20 @@ async function renderClassAttendance(content){
       if(attendanceError)throw attendanceError;
       const existingMap=new Map((existing||[]).map(x=>[x.student_id,x]));
       const counts=makeKpi('Alunos ativos na turma',students.length);summary.append(counts);
+      const attendanceTools=node('div',undefined,'attendance-tools');
+      const attendanceCounts=node('div',undefined,'attendance-counts');
+      const markAll=node('button','Marcar todos como presentes','btn btn-outline small-btn');markAll.type='button';
+      attendanceTools.append(attendanceCounts,markAll);rosterWrap.append(attendanceTools);
       const cards=node('div',undefined,'attendance-cards'),selectors=[];
+      function refreshAttendanceCounts(){
+        const totals={present:0,absent:0,excused:0,pending:0};
+        selectors.forEach(x=>{if(totals[x.select.value]!==undefined)totals[x.select.value]++;else totals.pending++;});
+        attendanceCounts.replaceChildren();
+        [['present','Presentes'],['absent','Ausentes'],['excused','Justificadas'],['pending','Pendentes']].forEach(([key,label])=>{const item=node('div',undefined,'attendance-count');item.append(node('strong',String(totals[key])),node('span',label));attendanceCounts.append(item);});
+        return totals;
+      }
+      markAll.addEventListener('click',()=>{selectors.forEach(x=>{x.select.value='present';});refreshAttendanceCounts();});
+
       (students||[]).forEach(st=>{
         const card=node('article',undefined,'attendance-student-card');
         const initials=String(st.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
@@ -750,9 +769,9 @@ async function renderClassAttendance(content){
         const sel=node('select',undefined,'search');sel.setAttribute('aria-label','Presença de '+st.full_name);
         [['','Selecione a situação'],['present','Presente'],['absent','Ausente'],['excused','Falta justificada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;sel.append(o);});
         const old=existingMap.get(st.id);if(old)sel.value=old.status;
-        card.append(top,sel);cards.append(card);selectors.push({student_id:st.id,select:sel});
+        card.append(top,sel);cards.append(card);selectors.push({student_id:st.id,select:sel});sel.addEventListener('change',refreshAttendanceCounts);
       });
-      rosterWrap.append(cards);
+      rosterWrap.append(cards);refreshAttendanceCounts();
       const save=node('button','Salvar chamada','btn btn-gold small-btn');save.type='button';save.style.marginTop='14px';
       save.addEventListener('click',async()=>{
         const missing=selectors.filter(x=>!x.select.value);
