@@ -700,19 +700,90 @@ async function renderGuardianFamily(content){
   const {data:links,error:linkError}=await supabaseClient.from('student_guardians')
     .select('student_id,relationship,is_primary,verified_at')
     .eq('guardian_user_id',guardianUser.id);
-  if(linkError){panel.append(node('p','Não foi possível consultar os vínculos familiares. O administrador precisa conferir as políticas RLS da tabela student_guardians. Detalhe: '+linkError.message,'status-line'));return;}
+  if(linkError){panel.append(node('p,'Não foi possível consultar os vínculos familiares. O administrador precisa conferir as políticas RLS da tabela student_guardians. Detalhe: '+linkError.message,'status-line'));return;}
   if(!links||!links.length){panel.append(node('p','Sua conta ainda não possui um aluno vinculado e confirmado. Solicite à Secretaria a conferência do cadastro.','status-line'));return;}
   const ids=[...new Set(links.map(x=>x.student_id).filter(Boolean))];
   const {data:children,error:childrenError}=await supabaseClient.from('students')
-    .select('id,full_name,birth_date,enrollment_date,belt').in('id',ids);
+    .select('id,full_name,birth_date,enrollment_date,belt,biometric_completed').in('id',ids);
   if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
   if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
+
+  let turnstileLoader=null;
+  const ensureTurnstile=async()=>{
+    if(window.turnstile)return window.turnstile;
+    if(!turnstileLoader){
+      turnstileLoader=new Promise((resolve,reject)=>{
+        const existing=document.querySelector('script[src*="challenges.cloudflare.com/turnstile"]');
+        if(existing){existing.addEventListener('load',()=>resolve(window.turnstile),{once:true});existing.addEventListener('error',reject,{once:true});}
+        else{const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;script.defer=true;script.onload=()=>resolve(window.turnstile);script.onerror=reject;document.head.append(script);}
+      });
+    }
+    return await turnstileLoader;
+  };
+  const siteKey='0x4AAAAAAFswPZX9oVKHZCXu';
   children.forEach(child=>{
     const card=node('article',undefined,'dash-panel');
     card.append(node('h3',child.full_name||'Aluno'));
     const details=node('div',undefined,'kpis');
     details.append(makeKpi('Data de nascimento',child.birth_date||'Não informado'),makeKpi('Data de matrícula',child.enrollment_date||'Não informado'),makeKpi('Faixa',child.belt||'Não informada'));
-    card.append(details);content.append(card);
+    card.append(details);
+    const bioBox=node('div',undefined,'activity-card');bioBox.style.marginTop='16px';
+    const bioTitle=node('h3','Biometria facial');bioBox.append(bioTitle);
+    const bioStatus=node('p',child.biometric_completed?'Foto facial já registrada.':'A captura facial está pendente.','status-line');
+    bioBox.append(bioStatus);
+    if(!child.biometric_completed){
+      const protocol=node('input',undefined,'search');protocol.placeholder='Protocolo da matrícula (PS-AAAA-XXXXXXXX)';protocol.autocomplete='off';protocol.maxLength=22;protocol.style.width='100%';
+      const consentWrap=node('label',undefined,'status-line');consentWrap.style.cssText='display:flex;gap:9px;align-items:flex-start;margin:12px 0';
+      const consent=node('input');consent.type='checkbox';consent.style.marginTop='3px';
+      consentWrap.append(consent,document.createTextNode('Confirmo que sou o responsável legal e autorizo a captura da fotografia facial conforme a autorização registrada na matrícula.'));
+      const captcha=node('div');captcha.style.margin='12px 0';
+      const camera=node('button','Iniciar captura facial','btn btn-gold small-btn');camera.type='button';
+      const video=node('video');video.autoplay=true;video.playsInline=true;video.muted=true;video.style.cssText='display:none;width:100%;max-width:420px;border-radius:10px;background:#111;margin-top:12px';
+      const capture=node('button','Capturar e enviar foto','btn btn-dark small-btn');capture.type='button';capture.style.cssText='display:none;margin:12px 8px 0 0';
+      const cancel=node('button','Cancelar câmera','btn btn-outline small-btn');cancel.type='button';cancel.style.cssText='display:none;margin-top:12px';
+      bioBox.append(protocol,consentWrap,captcha,camera,video,capture,cancel);
+      let widgetId=null,stream=null;
+      const stopCamera=()=>{if(stream){stream.getTracks().forEach(track=>track.stop());stream=null;}video.srcObject=null;video.style.display='none';capture.style.display='none';cancel.style.display='none';camera.style.display='';};
+      cancel.addEventListener('click',stopCamera);
+      camera.addEventListener('click',async()=>{
+        if(!consent.checked){bioStatus.textContent='Marque a confirmação de autorização antes de abrir a câmera.';bioStatus.className='status-line error';return;}
+        if(!/^PS-\\d{4}-[A-F0-9]{8}$/i.test(protocol.value.trim())){bioStatus.textContent='Informe o protocolo completo da matrícula.';bioStatus.className='status-line error';protocol.focus();return;}
+        camera.disabled=true;bioStatus.textContent='Preparando verificação e câmera…';
+        try{
+          const ts=await ensureTurnstile();
+          if(widgetId===null)widgetId=ts.render(captcha,{sitekey:siteKey});
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+          video.srcObject=stream;video.style.display='block';await video.play();
+          camera.style.display='none';capture.style.display='';cancel.style.display='';
+          bioStatus.textContent='Posicione o rosto no centro e clique em “Capturar e enviar foto”.';
+          camera.disabled=false;
+        }catch(err){stopCamera();camera.disabled=false;bioStatus.textContent='Não foi possível abrir a câmera: '+(err.message||String(err));bioStatus.className='status-line error';}
+      });
+      capture.addEventListener('click',async()=>{
+        const token=widgetId!==null&&window.turnstile?window.turnstile.getResponse(widgetId):'';
+        if(!token){bioStatus.textContent='Conclua a verificação de segurança antes de enviar.';bioStatus.className='status-line error';return;}
+        if(!stream||!video.videoWidth){bioStatus.textContent='A câmera ainda não está pronta.';return;}
+        capture.disabled=true;bioStatus.textContent='Enviando foto com segurança…';
+        try{
+          const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+          const ctx=canvas.getContext('2d');ctx.drawImage(video,0,0,canvas.width,canvas.height);
+          const jpeg=canvas.toDataURL('image/jpeg',0.82);
+          if(jpeg.length>4_100_000)throw new Error('A foto ficou muito grande. Afaste um pouco a câmera e tente novamente.');
+          const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
+          if(sessionError||!session?.access_token)throw new Error('Sessão expirada. Entre novamente na Área da Família.');
+          const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},
+            body:JSON.stringify({protocol:protocol.value.trim().toUpperCase(),image:jpeg,turnstile_token:token})
+          });
+          const result=await response.json().catch(()=>({}));
+          if(!response.ok)throw new Error(result.error||'O servidor não confirmou o armazenamento da foto.');
+          stopCamera();bioStatus.textContent='Captura concluída. A foto foi armazenada com segurança.';bioStatus.className='status-line success';
+          consent.disabled=true;protocol.disabled=true;camera.disabled=true;capture.style.display='none';cancel.style.display='none';
+        }catch(err){bioStatus.textContent=err.message||'Falha ao enviar a foto.';bioStatus.className='status-line error';capture.disabled=false;if(window.turnstile&&widgetId!==null)window.turnstile.reset(widgetId);}
+      });
+    }
+    card.append(bioBox);content.append(card);
   });
   panel.append(node('p','Para corrigir dados cadastrais ou solicitar informações, entre em contato com a Secretaria.','status-line'));
 }
