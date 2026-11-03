@@ -687,7 +687,7 @@ async function renderGuardianFamily(content){
 }
 async function renderClassAttendance(content){
   const panel=node('div',undefined,'dash-panel');
-  panel.append(node('h2','Turmas e chamada'),node('p','Selecione uma turma e a data da aula. A lista é carregada conforme as permissões do seu perfil.','status-line'));
+  panel.append(node('h2','Turma única e chamada'),node('p','Selecione uma turma e a data da aula. A lista é carregada conforme as permissões do seu perfil.','status-line'));
   const formBox=node('div',undefined,'student-tools');
   const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Selecionar turma');
   const dateInput=node('input',undefined,'search');dateInput.type='date';dateInput.setAttribute('aria-label','Data da aula');
@@ -704,7 +704,7 @@ async function renderClassAttendance(content){
     classSelect.replaceChildren();
     if(!classes.length){status.textContent='Nenhuma turma disponível para este perfil. Peça ao administrador para conferir os vínculos de instrutor.';loadBtn.disabled=true;return;}
     classes.forEach(c=>{const o=node('option',c.name);o.value=c.id;classSelect.append(o);});
-    status.textContent='Turmas carregadas: '+classes.length+'. Alunos e chamadas respeitam as regras de acesso do Supabase.';
+    status.textContent='Turma disponível: '+classes.length+'. Alunos e chamadas respeitam as regras de acesso do Supabase.';
   }catch(err){status.textContent='Não foi possível carregar as turmas: '+(err.message||String(err));loadBtn.disabled=true;return;}
   async function openRoster(){
     loadBtn.disabled=true;loadBtn.textContent='Carregando…';rosterWrap.replaceChildren();summary.replaceChildren();
@@ -945,8 +945,9 @@ async function renderStudentReports(content){
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Relatórios da turma única'),node('p','Resumo de alunos, situação cadastral, frequência e graduação.','status-line'));
   const search=node('input',undefined,'search');search.placeholder='Buscar aluno';
+  const exportBtn=node('button','Exportar CSV','btn btn-gold small-btn');exportBtn.type='button';
   const status=node('p','Carregando…','status-line');
-  const wrap=node('div',undefined,'table-wrap');panel.append(search,status,wrap);content.append(panel);
+  const wrap=node('div',undefined,'table-wrap');panel.append(search,exportBtn,status,wrap);content.append(panel);
   let rows=[];
   function draw(){
     const term=search.value.trim().toLocaleLowerCase('pt-BR');const shown=rows.filter(x=>x.name.toLocaleLowerCase('pt-BR').includes(term));
@@ -960,6 +961,7 @@ async function renderStudentReports(content){
     const counts=new Map();(a.data||[]).forEach(v=>{const x=counts.get(v.student_id)||{present:0,absent:0,excused:0};if(Object.prototype.hasOwnProperty.call(x,v.status))x[v.status]++;counts.set(v.student_id,x);});
     const belts=new Map();(g.data||[]).forEach(v=>{if(!belts.has(v.student_id))belts.set(v.student_id,v.belt);});
     rows=(s.data||[]).map(v=>{const x=counts.get(v.id)||{present:0,absent:0,excused:0};return {name:v.full_name||'Sem nome',registration:v.registration_status||'Pendente',present:x.present,absent:x.absent,excused:x.excused,belt:belts.get(v.id)||'—'};});draw();search.addEventListener('input',draw);
+    exportBtn.addEventListener('click',()=>{const data=[['Aluno','Cadastro','Presenças','Faltas','Justificadas','Graduação'],...rows.filter(x=>x.name.toLocaleLowerCase('pt-BR').includes(search.value.trim().toLocaleLowerCase('pt-BR'))).map(x=>[x.name,x.registration,x.present,x.absent,x.excused,x.belt])];const csv=data.map(line=>line.map(v=>'\"'+String(v??'').replace(/\"/g,'\"\"')+'\"').join(';')).join('\\r\\n');const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='relatorio-projeto-sementes.csv';a.click();URL.revokeObjectURL(url);});
   }catch(e){status.textContent='Erro ao gerar relatório: '+(e.message||String(e));}
 }
 
