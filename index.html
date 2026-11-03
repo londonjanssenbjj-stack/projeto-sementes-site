@@ -700,7 +700,7 @@ async function renderGuardianFamily(content){
   const {data:links,error:linkError}=await supabaseClient.from('student_guardians')
     .select('student_id,relationship,is_primary,verified_at')
     .eq('guardian_user_id',guardianUser.id);
-  if(linkError){panel.append(node('p,'Não foi possível consultar os vínculos familiares. O administrador precisa conferir as políticas RLS da tabela student_guardians. Detalhe: '+linkError.message,'status-line'));return;}
+  if(linkError){panel.append(node('p','Não foi possível consultar os vínculos familiares. O administrador precisa conferir as políticas RLS da tabela student_guardians. Detalhe: '+linkError.message,'status-line'));return;}
   if(!links||!links.length){panel.append(node('p','Sua conta ainda não possui um aluno vinculado e confirmado. Solicite à Secretaria a conferência do cadastro.','status-line'));return;}
   const ids=[...new Set(links.map(x=>x.student_id).filter(Boolean))];
   const {data:children,error:childrenError}=await supabaseClient.from('students')
@@ -747,7 +747,7 @@ async function renderGuardianFamily(content){
       cancel.addEventListener('click',stopCamera);
       camera.addEventListener('click',async()=>{
         if(!consent.checked){bioStatus.textContent='Marque a confirmação de autorização antes de abrir a câmera.';bioStatus.className='status-line error';return;}
-        if(!/^PS-\\d{4}-[A-F0-9]{8}$/i.test(protocol.value.trim())){bioStatus.textContent='Informe o protocolo completo da matrícula.';bioStatus.className='status-line error';protocol.focus();return;}
+        if(!/^PS-\d{4}-[A-F0-9]{8}$/i.test(protocol.value.trim())){bioStatus.textContent='Informe o protocolo completo da matrícula.';bioStatus.className='status-line error';protocol.focus();return;}
         camera.disabled=true;bioStatus.textContent='Preparando verificação e câmera…';
         try{
           const ts=await ensureTurnstile();
