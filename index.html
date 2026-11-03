@@ -634,7 +634,7 @@ nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classLi
 /* Chave publicável: nunca coloque uma chave secret/service_role no HTML. */
 const SUPABASE_URL='https://mmycsmautsnelllrilka.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_4kQJZLN0ROE-z6TnmqffQQ_QfXDUD9G';
-const supabaseClient=(window.supabase&&SUPABASE_URL.startsWith('https://')&&SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_'))?window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY):null;
+const supabaseClient=(window.supabase&&SUPABASE_URL.startsWith('https://')&&SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_'))?window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'projeto-sementes-auth'}}):null;
 const $=id=>document.getElementById(id);
 const modal=$('loginModal'), message=$('loginMessage'), form=$('loginForm'), signInBtn=$('signInBtn');
 let currentProfile=null, studentsCache=[], loginMode='team';
@@ -676,7 +676,10 @@ async function loadDashboard(){
   currentProfile=await getProfile(user);
   $('profileInfo').textContent=(currentProfile.full_name||user.email)+' • '+niceRole(currentProfile.role)+' • '+user.email;
   const guardian=currentProfile.role==='guardian';
-  $('dashNav').style.display=guardian?'none':'';
+  const dashNav=$('dashNav');
+  dashNav.replaceChildren();
+  if(guardian){const familyTab=node('button','Área da Família','active');familyTab.type='button';familyTab.dataset.view='familia';dashNav.append(familyTab);dashNav.style.display='';}
+  else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['relatorios','Relatórios']].forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
   $('guardianProvisionTools').style.display=currentProfile.role==='admin'?'':'none';
   $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
   setPrivateMode(true);
@@ -1246,7 +1249,7 @@ studentForm.addEventListener('submit',async e=>{
   }finally{save.disabled=false;save.textContent='Salvar alterações';}
 });
 
-$('dashNav').addEventListener('click',e=>{const b=e.target.closest('button[data-view]');if(b)renderView(b.dataset.view);});
+$('dashNav').addEventListener('click',e=>{const b=e.target.closest('button[data-view]');if(b)renderView(b.dataset.view).catch(err=>{const content=$('dashContent');content.replaceChildren(node('p','Não foi possível carregar esta área. Sua sessão foi preservada. Tente novamente. Detalhe: '+(err.message||String(err)),'status-line error'));});});
 $('provisionGuardiansBtn').addEventListener('click',async()=>{
   const btn=$('provisionGuardiansBtn'),out=$('provisionGuardiansResult');
   if(!currentProfile||currentProfile.role!=='admin'){out.textContent='Somente o administrador pode executar esta operação.';out.className='message show error';return;}
@@ -1303,10 +1306,14 @@ form.addEventListener('submit',async e=>{
       :'Esta conta não possui perfil de Administrador ou Professor. Utilize o Portal do Responsável, se for responsável por aluno.');
     await loadDashboard();closeModal();
   }catch(err){
-    await supabaseClient.auth.signOut().catch(()=>{});
-    showMessage(err&&err.message?err.message:'Não foi possível entrar. Confira os dados e tente novamente.','error');
+    const messageText=err&&err.message?err.message:'Não foi possível entrar. Confira os dados e tente novamente.';
+    if(/não possui perfil|perfil está inativo|utilize o acesso/i.test(messageText))await supabaseClient.auth.signOut().catch(()=>{});
+    showMessage(messageText,'error');
   }finally{signInBtn.disabled=false;signInBtn.textContent='Entrar';}
 });
+
+// Restaura a sessão válida ao recarregar a página, sem encerrar o login por falhas transitórias.
+if(supabaseClient){supabaseClient.auth.getSession().then(async({data,error})=>{if(error)throw error;if(data?.session&&!currentProfile){try{await loadDashboard();}catch(err){showMessage('Sua sessão foi preservada, mas o painel não carregou. Atualize a página ou tente novamente. Detalhe: '+(err.message||String(err)),'error');}}}).catch(err=>console.warn('Restauração de sessão:',err));}
 $('resetBtn').addEventListener('click',async()=>{
   if(!supabaseClient){showMessage('Conexão com Supabase não inicializada.','error');return;}
   const email=$('email').value.trim();if(!email || !email.includes('@')){showMessage('Para recuperar a senha, informe o e-mail cadastrado. Se sua conta usa somente celular, procure a Secretaria do Projeto.','error');return;}
