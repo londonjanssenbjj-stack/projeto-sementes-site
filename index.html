@@ -924,16 +924,85 @@ async function renderView(view){
   if(view==='inicio'){await renderOverview(content);return;}
   if(view==='alunos'){await renderStudents(content);return;}
   if(view==='chamada'){await renderClassAttendance(content);return;}\n  if(view==='historico'){await renderAttendanceHistory(content);return;}\n  if(view==='tecnica'){await renderTechnicalProgress(content);return;}
-  const panel=node('div',undefined,'dash-panel');
-  panel.append(node('h2','Atividades'),node('p','Registro das atividades informadas pelo projeto. Apresentação em cartões, sem tabela nesta etapa.','status-line'));
-  const lecture=node('article',undefined,'activity-card');
-  lecture.append(node('strong','Palestra: Escolhas Saudáveis – Influências – Prevenções'),node('p','Período: setembro de 2026 • Data informada no cronograma: 29/09/2026 • 19h'),node('p','Palestrante: equipe PROERD'),node('p','Quantidade registrada: 1 palestra realizada.'));
-  panel.append(lecture);
-  const classCard=node('article',undefined,'activity-card');
-  classCard.append(node('strong','Aulas de Jiu-Jitsu'),node('p','Agosto: duas vezes por semana — 8 aulas previstas.'),node('p','Setembro: duas vezes por semana — 9 aulas previstas.'),node('p','Outubro: aos sábados até 31/10/2026 — 5 aulas previstas.'),node('p','Total do período: 22 aulas previstas.'));
-  panel.append(classCard,node('p','As atividades serão mantidas em cartões simples. Nenhuma tabela de atividades foi criada.','source-note'));
-  content.append(panel);
+  await renderActivities(content);
+
 }
+
+async function renderActivities(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Atividades, palestras e ações sociais'),
+    node('p','Agenda e histórico carregados do Supabase. Professores podem consultar; somente a administração pode cadastrar atividades.','status-line'));
+  const status=node('p','Carregando atividades…','status-line');
+  const cards=node('div',undefined,'activity-grid');
+  panel.append(status,cards);
+  const isAdmin=currentProfile&&currentProfile.role==='admin';
+  if(isAdmin){
+    const form=node('form',undefined,'activity-card');
+    form.style.marginBottom='20px';
+    form.append(node('h3','Cadastrar nova atividade'));
+    const type=node('select',undefined,'search');
+    [['lecture','Palestra / treinamento'],['social','Ação social / comunitária']].forEach(([v,label])=>{const o=node('option',label);o.value=v;type.append(o);});
+    const title=node('input',undefined,'search');title.required=true;title.maxLength=180;title.placeholder='Título da atividade';
+    const date=node('input',undefined,'search');date.type='datetime-local';
+    const location=node('input',undefined,'search');location.maxLength=180;location.placeholder='Local (opcional)';
+    const topic=node('input',undefined,'search');topic.maxLength=180;topic.placeholder='Tema ou categoria (opcional)';
+    const speaker=node('input',undefined,'search');speaker.maxLength=180;speaker.placeholder='Palestrante / responsável (opcional)';
+    const description=node('textarea',undefined,'search');description.rows=3;description.maxLength=3000;description.placeholder='Descrição (opcional)';
+    const save=node('button','Salvar atividade','btn btn-gold small-btn');save.type='submit';
+    const formMsg=node('p','','status-line');
+    [type,title,date,location,topic,speaker,description,save,formMsg].forEach(el=>form.append(el));
+    panel.insertBefore(form,status);
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();save.disabled=true;save.textContent='Salvando…';formMsg.textContent='';
+      try{
+        const when=date.value?new Date(date.value).toISOString():null;
+        const payload=type.value==='lecture'
+          ? {title:title.value.trim(),topic:topic.value.trim()||null,description:description.value.trim()||null,scheduled_at:when,location:location.value.trim()||null,speaker:speaker.value.trim()||null,status:'planned',created_by:currentProfile.id}
+          : {title:title.value.trim(),category:topic.value.trim()||null,description:description.value.trim()||null,action_date:date.value?date.value.slice(0,10):null,location:location.value.trim()||null,status:'planned',photo_consent_confirmed:false,created_by:currentProfile.id};
+        const table=type.value==='lecture'?'lectures':'social_actions';
+        const {error}=await supabaseClient.from(table).insert(payload);
+        if(error)throw error;
+        form.reset();formMsg.textContent='Atividade cadastrada. Atualizando a lista…';formMsg.className='status-line success';
+        await loadActivities();
+      }catch(err){formMsg.textContent='Não foi possível salvar: '+(err.message||String(err));formMsg.className='status-line error';}
+      finally{save.disabled=false;save.textContent='Salvar atividade';}
+    });
+  }
+  async function loadActivities(){
+    cards.replaceChildren();status.textContent='Consultando atividades…';
+    try{
+      const [lecturesResult,actionsResult]=await Promise.all([
+        supabaseClient.from('lectures').select('id,title,topic,description,scheduled_at,location,speaker,status,participant_count,results_note').order('scheduled_at',{ascending:false}).limit(100),
+        supabaseClient.from('social_actions').select('id,title,category,description,action_date,location,status,participant_count,results_note').order('action_date',{ascending:false}).limit(100)
+      ]);
+      if(lecturesResult.error)throw lecturesResult.error;
+      if(actionsResult.error)throw actionsResult.error;
+      const items=[
+        ...(lecturesResult.data||[]).map(x=>({...x,_kind:'Palestra / treinamento',_date:x.scheduled_at})),
+        ...(actionsResult.data||[]).map(x=>({...x,_kind:'Ação social',_date:x.action_date}))
+      ].sort((a,b)=>String(b._date||'').localeCompare(String(a._date||'')));
+      items.forEach(item=>{
+        const card=node('article',undefined,'activity-card');
+        const head=node('div',undefined,'activity-card-head');
+        head.append(node('span',item._kind,'eyebrow'),node('span',item.status==='completed'?'Concluída':item.status==='cancelled'?'Cancelada':'Planejada','status-pill'));
+        card.append(head,node('h3',item.title||'Atividade sem título'));
+        if(item._date)card.append(node('p',new Date(item._date).toLocaleString('pt-BR')));
+        if(item.topic||item.category)card.append(node('p','Tema: '+(item.topic||item.category)));
+        if(item.speaker)card.append(node('p','Responsável: '+item.speaker));
+        if(item.location)card.append(node('p','Local: '+item.location));
+        if(item.description)card.append(node('p',item.description));
+        if(item.participant_count!==null&&item.participant_count!==undefined)card.append(node('p','Participantes: '+item.participant_count));
+        if(item.results_note)card.append(node('p','Resultado: '+item.results_note));
+        cards.append(card);
+      });
+      status.textContent=items.length+' atividade(s) encontrada(s) no banco de dados.';
+      if(!items.length)cards.append(node('p','Nenhuma atividade cadastrada ainda.','status-line'));
+    }catch(err){status.textContent='Não foi possível consultar as atividades: '+(err.message||String(err));status.className='status-line error';}
+  }
+  content.append(panel);
+  await loadActivities();
+}
+
 async function renderStudents(content){
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Gestão de alunos'),node('p','Pesquisa e exportação da lista básica. Esta versão consulta somente nome, faixa, data de matrícula e identificador; dados de saúde e contatos pessoais não são carregados.','status-line'));
