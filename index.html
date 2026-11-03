@@ -1532,7 +1532,7 @@ $('resetBtn').addEventListener('click',async()=>{
 
      // A captura é oferecida logo após a criação do acesso, sem abrir a câmera automaticamente.
      if(accountData.accountCreated){
-      const loginEmail=String(phone).replace(/\\D/g,'')+'@sementes.internal';
+      const loginEmail=String(phone).replace(/\D/g,'')+'@sementes.internal';
       const {data:loginData,error:loginError}=await supabaseClient.auth.signInWithPassword({email:loginEmail,password:pass});
       if(loginError||!loginData.session)throw new Error('Acesso criado, mas não foi possível iniciar a sessão automaticamente. Entre na Área da Família com o telefone e a senha cadastrada para concluir a biometria.');
       const bioBox=document.createElement('section');bioBox.style.cssText='margin-top:18px;padding:18px;border:1px solid #d7b34b;border-radius:8px;background:#fff;color:#172131';
