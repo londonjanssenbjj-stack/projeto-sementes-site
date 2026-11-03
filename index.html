@@ -1526,9 +1526,50 @@ $('resetBtn').addEventListener('click',async()=>{
      const accountResponse=await fetch(SUPABASE_URL+'/functions/v1/guardian-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({action:'claim_enrollment',guardian_name:guardian,guardian_document_type:docType,guardian_document_number:docNumber,guardian_phone:phone,email,password:pass,turnstile_token:captchaToken})});
      const accountData=await accountResponse.json().catch(()=>({}));
      if(!accountResponse.ok)throw new Error(accountData.error||'Não foi possível criar o acesso.');
-     msg.textContent='Acesso criado! Login: '+accountData.login+'. Use a senha que acabou de cadastrar na Área da Família.';msg.style.color='#166534';
+     msg.textContent='Acesso criado! Login: '+accountData.login+'.';msg.style.color='#166534';
      btn.textContent='Acesso criado';btn.disabled=true;
      if(window.turnstile)window.turnstile.remove(accessCaptcha);
+
+     // A captura é oferecida logo após a criação do acesso, sem abrir a câmera automaticamente.
+     if(accountData.accountCreated){
+      const loginEmail=String(phone).replace(/\\D/g,'')+'@sementes.internal';
+      const {data:loginData,error:loginError}=await supabaseClient.auth.signInWithPassword({email:loginEmail,password:pass});
+      if(loginError||!loginData.session)throw new Error('Acesso criado, mas não foi possível iniciar a sessão automaticamente. Entre na Área da Família com o telefone e a senha cadastrada para concluir a biometria.');
+      const bioBox=document.createElement('section');bioBox.style.cssText='margin-top:18px;padding:18px;border:1px solid #d7b34b;border-radius:8px;background:#fff;color:#172131';
+      bioBox.innerHTML='<h3 style="margin:0 0 8px;color:#0b1b30">Etapa final: biometria facial</h3><p style="font-size:13px;line-height:1.6">A matrícula e a assinatura foram recebidas. Para concluir, confirme sua autorização e inicie a câmera quando estiver pronto. A câmera não será aberta sem seu clique.</p><label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;margin:12px 0"><input id="postBioConsent" type="checkbox" style="margin-top:3px">Confirmo que autorizo a captura da fotografia facial do aluno, conforme a opção registrada nesta matrícula.</label><div id="postBioTurnstile" style="margin:10px 0"></div><button id="postBioStart" type="button" class="btn btn-gold">Iniciar câmera</button><video id="postBioVideo" autoplay playsinline muted style="display:none;width:100%;max-width:420px;margin-top:14px;border-radius:8px;background:#111"></video><div><button id="postBioCapture" type="button" class="btn btn-dark" style="display:none;margin-top:12px">Capturar e concluir biometria</button><button id="postBioCancel" type="button" class="btn btn-outline" style="display:none;margin:12px 0 0 8px">Cancelar</button></div><p id="postBioStatus" role="status" style="font-size:13px;margin:10px 0 0"></p>';
+      accessBox.appendChild(bioBox);
+      const bioStatus=bioBox.querySelector('#postBioStatus'),bioConsent=bioBox.querySelector('#postBioConsent'),bioStart=bioBox.querySelector('#postBioStart'),bioVideo=bioBox.querySelector('#postBioVideo'),bioCapture=bioBox.querySelector('#postBioCapture'),bioCancel=bioBox.querySelector('#postBioCancel');
+      let bioWidget=null,bioStream=null;
+      bioWidget=window.turnstile.render(bioBox.querySelector('#postBioTurnstile'),{sitekey:TURNSTILE_SITE_KEY});
+      const stopBioCamera=()=>{if(bioStream){bioStream.getTracks().forEach(t=>t.stop());bioStream=null;}bioVideo.srcObject=null;bioVideo.style.display='none';bioCapture.style.display='none';bioCancel.style.display='none';bioStart.style.display='';};
+      bioCancel.addEventListener('click',stopBioCamera);
+      bioStart.addEventListener('click',async()=>{
+       if(!payload.consents.biometrics||!bioConsent.checked){bioStatus.textContent='A captura exige consentimento registrado e confirmação do responsável.';bioStatus.style.color='#9b1c1c';return;}
+       bioStart.disabled=true;
+       try{bioStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});bioVideo.srcObject=bioStream;bioVideo.style.display='block';await bioVideo.play();bioStart.style.display='none';bioCapture.style.display='inline-flex';bioCancel.style.display='inline-flex';bioStatus.textContent='Posicione o rosto no centro e clique em Capturar.';bioStatus.style.color='#166534';}
+       catch(err){stopBioCamera();bioStatus.textContent='Não foi possível abrir a câmera: '+(err.message||String(err));bioStatus.style.color='#9b1c1c';}
+       finally{bioStart.disabled=false;}
+      });
+      bioCapture.addEventListener('click',async()=>{
+       const token=window.turnstile.getResponse(bioWidget);
+       if(!token){bioStatus.textContent='Conclua a verificação de segurança.';bioStatus.style.color='#9b1c1c';return;}
+       if(!bioStream||!bioVideo.videoWidth){bioStatus.textContent='A câmera ainda não está pronta.';return;}
+       bioCapture.disabled=true;bioStatus.textContent='Enviando fotografia com segurança…';
+       try{
+        const photo=document.createElement('canvas');photo.width=bioVideo.videoWidth;photo.height=bioVideo.videoHeight;photo.getContext('2d').drawImage(bioVideo,0,0);
+        const jpeg=photo.toDataURL('image/jpeg',0.82);
+        if(jpeg.length>4100000)throw new Error('A imagem ficou muito grande. Tente novamente.');
+        const {data:{session}}=await supabaseClient.auth.getSession();
+        if(!session?.access_token)throw new Error('Sessão expirada. Entre novamente.');
+        const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({protocol:data.protocol,image:jpeg,turnstile_token:token})});
+        const resultBio=await response.json().catch(()=>({}));
+        if(!response.ok)throw new Error(resultBio.error||'Não foi possível concluir a biometria.');
+        stopBioCamera();bioStatus.textContent='Biometria concluída e fotografia armazenada com segurança.';bioStatus.style.color='#166534';bioConsent.disabled=true;bioStart.disabled=true;bioCapture.style.display='none';bioCancel.style.display='none';window.turnstile.remove(bioWidget);
+       }catch(err){bioStatus.textContent=err.message||'Falha ao enviar a fotografia.';bioStatus.style.color='#9b1c1c';bioCapture.disabled=false;window.turnstile.reset(bioWidget);}
+      });
+     }else{
+      const note=document.createElement('p');note.style.cssText='font-size:13px;margin-top:12px;color:#8a5a00';note.textContent='Esta matrícula corresponde a um acesso familiar já existente. Para preservar a senha atual, entre na Área da Família com sua senha habitual; a biometria estará disponível no acompanhamento do aluno.';accessBox.appendChild(note);
+     }
     }catch(accountError){msg.textContent=accountError.message||'Falha ao criar acesso.';msg.style.color='#9b1c1c';btn.disabled=false;btn.textContent='Tentar novamente';if(window.turnstile)window.turnstile.reset(accessCaptcha);}
    });
    enrollmentForm.reset();ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;otherWrap.hidden=true;otherInput.required=false;
