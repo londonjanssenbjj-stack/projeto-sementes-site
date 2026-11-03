@@ -923,7 +923,9 @@ async function renderView(view){
   }
   if(view==='inicio'){await renderOverview(content);return;}
   if(view==='alunos'){await renderStudents(content);return;}
-  if(view==='chamada'){await renderClassAttendance(content);return;}\n  if(view==='historico'){await renderAttendanceHistory(content);return;}\n  if(view==='tecnica'){await renderTechnicalProgress(content);return;}
+  if(view==='chamada'){await renderClassAttendance(content);return;}
+  if(view==='historico'){await renderAttendanceHistory(content);return;}
+  if(view==='tecnica'){await renderTechnicalProgress(content);return;}
   await renderActivities(content);
 
 }
