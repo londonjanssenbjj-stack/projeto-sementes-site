@@ -90,6 +90,8 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .age-item strong{display:block;font:800 21px Manrope,sans-serif;color:#0b1b30}
 #dashboard .age-item span{font-size:11px;color:#5d6673}
 #dashboard .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
+#dashboard .activity-management{display:grid;gap:8px;border-top:1px solid #e8e4db;padding-top:12px;margin-top:12px}
+#dashboard .activity-management .btn{justify-self:start}
 #dashboard .activity-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 #dashboard .activity-card h3{font:800 16px Manrope,sans-serif;color:#0b1b30;margin:6px 0 10px}
 #dashboard .activity-card .status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#f3edda;color:#765b14;font-size:11px;font-weight:800}
@@ -1003,6 +1005,41 @@ async function renderActivities(content){
         if(item.description)card.append(node('p',item.description));
         if(item.participant_count!==null&&item.participant_count!==undefined)card.append(node('p','Participantes: '+item.participant_count));
         if(item.results_note)card.append(node('p','Resultado: '+item.results_note));
+        if(isAdmin){
+          const management=node('div',undefined,'activity-management');
+          const state=node('select',undefined,'search');
+          [['planned','Planejada'],['completed','Concluída'],['cancelled','Cancelada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;state.append(o);});
+          state.value=item.status||'planned';
+          const participants=node('input',undefined,'search');participants.type='number';participants.min='0';participants.max='100000';participants.placeholder='Participantes';participants.value=item.participant_count??'';
+          const resultNote=node('textarea',undefined,'search');resultNote.rows=2;resultNote.maxLength=2000;resultNote.placeholder='Resumo dos resultados';resultNote.value=item.results_note||'';
+          const update=node('button','Salvar atualização','btn btn-gold small-btn');update.type='button';
+          const remove=node('button','Excluir','btn btn-outline small-btn');remove.type='button';
+          const feedback=node('p','','status-line');
+          management.append(state,participants,resultNote,update,remove,feedback);
+          card.append(management);
+          update.addEventListener('click',async()=>{
+            update.disabled=true;feedback.textContent='Salvando…';
+            try{
+              const table=item._kind==='Palestra / treinamento'?'lectures':'social_actions';
+              const payload={status:state.value,participant_count:participants.value===''?null:Number(participants.value),results_note:resultNote.value.trim()||null};
+              const {error}=await supabaseClient.from(table).update(payload).eq('id',item.id);
+              if(error)throw error;
+              feedback.textContent='Atualização salva.';feedback.className='status-line success';
+              await loadActivities();
+            }catch(err){feedback.textContent='Falha ao atualizar: '+(err.message||String(err));feedback.className='status-line error';}
+            finally{update.disabled=false;}
+          });
+          remove.addEventListener('click',async()=>{
+            if(!window.confirm('Excluir definitivamente esta atividade?'))return;
+            remove.disabled=true;feedback.textContent='Excluindo…';
+            try{
+              const table=item._kind==='Palestra / treinamento'?'lectures':'social_actions';
+              const {error}=await supabaseClient.from(table).delete().eq('id',item.id);
+              if(error)throw error;
+              await loadActivities();
+            }catch(err){feedback.textContent='Falha ao excluir: '+(err.message||String(err));feedback.className='status-line error';remove.disabled=false;}
+          });
+        }
         cards.append(card);
       });
       status.textContent=items.length+' atividade(s) encontrada(s) no banco de dados.';
