@@ -1068,16 +1068,30 @@ async function renderAttendanceHistory(content){
       const tr=node('tr');const label=rec.status==='present'?'Presente':rec.status==='absent'?'Ausente':rec.status==='excused'?'Falta justificada':rec.status;
       const dateCell=node('td',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR'));
       const situationCell=node('td',label);
-      if(currentProfile?.role==='admin'){
-        const remove=node('button','Retirar aula','btn btn-outline small-btn');remove.type='button';
-        remove.style.display='inline-block';remove.style.marginLeft='12px';remove.style.whiteSpace='nowrap';
+      tr.append(dateCell,situationCell);
+      tbody.append(tr);
+    });
+    table.append(tbody);
+    individualWrap.append(heading,metrics,explanation,monthlyTitle,monthlyTable,tableTitle,table);
+    if(currentProfile?.role==='admin'&&st.records.length){
+      const removePanel=node('section',undefined,'activity-card');
+      removePanel.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;margin-top:16px;padding:16px;border:1px solid #d9b64a;border-left:4px solid #d9b64a;border-radius:8px;background:#fff;';
+      const removeTitle=node('h3','Retirar aula da frequência');
+      removeTitle.style.cssText='display:block!important;margin:0 0 10px 0;color:#14243a;';
+      removePanel.append(removeTitle);
+      st.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(rec=>{
+        const actionRow=node('div');actionRow.style.cssText='display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex-wrap:wrap!important;padding:9px 0;border-bottom:1px solid #e5e7eb;';
+        const dateLabel=node('span',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR')+' — '+(rec.status==='present'?'Presente':rec.status==='absent'?'Ausente':rec.status==='excused'?'Falta justificada':rec.status));
+        dateLabel.style.cssText='display:inline-block!important;color:#26364b;font-weight:600;';
+        const remove=node('button','Retirar aula');remove.type='button';
+        remove.style.cssText='display:inline-block!important;visibility:visible!important;opacity:1!important;position:static!important;background:#fff!important;color:#9b2525!important;border:1px solid #c83b3b!important;border-radius:6px!important;padding:9px 14px!important;font-weight:700!important;cursor:pointer!important;min-height:36px!important;';
         remove.addEventListener('click',async()=>{
           if(!confirm('Retirar este registro de frequência do aluno nesta data?'))return;
           remove.disabled=true;
           try{
             const {error}=await supabaseClient.from('attendance').delete().eq('lesson_id',rec.lesson_id).eq('student_id',selected);
             if(error)throw error;
-            st.records=st.records.filter(x=>!(x.lesson_id===rec.lesson_id));
+            st.records=st.records.filter(x=>x.lesson_id!==rec.lesson_id);
             recount();renderIndividual();
             status.textContent='Registro de frequência retirado com sucesso.';
             status.className='status-line';
@@ -1086,13 +1100,10 @@ async function renderAttendanceHistory(content){
             status.className='status-line error';remove.disabled=false;
           }
         });
-        situationCell.append(remove);
-      }
-      tr.append(dateCell,situationCell);
-      tbody.append(tr);
-    });
-    table.append(tbody);
-    individualWrap.append(heading,metrics,explanation,monthlyTitle,monthlyTable,tableTitle,table);
+        actionRow.append(dateLabel,remove);removePanel.append(actionRow);
+      });
+      individualWrap.append(removePanel);
+    }
     if(currentProfile?.role==='admin'){
       const editor=node('section',undefined,'activity-card');editor.style.marginTop='18px';
       editor.append(node('h3','Editar frequência individual'));
