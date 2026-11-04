@@ -1116,7 +1116,34 @@ async function renderAttendanceHistory(content){
       [['present','Presente'],['absent','Ausente'],['excused','Falta justificada']].forEach(([v,l])=>{const o=node('option',l);o.value=v;lessonStatus.append(o);});
       const addLesson=node('button','Inserir aula','btn btn-gold small-btn');addLesson.type='button';
       editorTools.append(lessonClass,lessonDate,lessonStatus,addLesson);
-      editor.append(editorTools,node('p','Insira um registro para este aluno em uma turma e data. Para retirar, use “Retirar aula” no registro correspondente.','status-line'));
+      const removeTools=node('div');removeTools.style.cssText='display:flex!important;visibility:visible!important;opacity:1!important;flex-wrap:wrap!important;gap:10px!important;align-items:center!important;margin-top:14px!important;padding-top:14px!important;border-top:1px solid #e5e7eb!important;';
+      const removeSelect=node('select',undefined,'search');removeSelect.setAttribute('aria-label','Selecionar aula para retirar');removeSelect.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;flex:1 1 260px!important;min-width:220px!important;';
+      const removePlaceholder=node('option','Selecione uma aula para retirar');removePlaceholder.value='';removeSelect.append(removePlaceholder);
+      st.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(rec=>{
+        const option=node('option',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR')+' — '+(rec.status==='present'?'Presente':rec.status==='absent'?'Ausente':rec.status==='excused'?'Falta justificada':rec.status));
+        option.value=rec.lesson_id;removeSelect.append(option);
+      });
+      const removeSelected=node('button','Retirar aula','btn btn-outline small-btn');removeSelected.type='button';
+      removeSelected.style.cssText='display:inline-block!important;visibility:visible!important;opacity:1!important;background:#fff!important;color:#9b2525!important;border:1px solid #c83b3b!important;border-radius:6px!important;padding:10px 16px!important;font-weight:700!important;cursor:pointer!important;min-height:40px!important;';
+      removeSelected.addEventListener('click',async()=>{
+        const lessonId=removeSelect.value;
+        if(!lessonId){status.textContent='Selecione a data da aula que deseja retirar.';status.className='status-line error';return;}
+        if(!confirm('Retirar esta aula da frequência deste aluno?'))return;
+        removeSelected.disabled=true;
+        try{
+          const {error}=await supabaseClient.from('attendance').delete().eq('lesson_id',lessonId).eq('student_id',selected);
+          if(error)throw error;
+          st.records=st.records.filter(x=>x.lesson_id!==lessonId);
+          recount();renderIndividual();
+          status.textContent='Aula retirada da frequência do aluno com sucesso.';
+          status.className='status-line';
+        }catch(err){
+          status.textContent='Não foi possível retirar a aula: '+(err.message||String(err));
+          status.className='status-line error';removeSelected.disabled=false;
+        }
+      });
+      removeTools.append(removeSelect,removeSelected);
+      editor.append(editorTools,removeTools,node('p','Insira uma aula ou selecione um registro existente para retirá-lo da frequência deste aluno.','status-line'));
       individualWrap.append(editor);
       addLesson.addEventListener('click',async()=>{
         if(!lessonClass.value||!lessonDate.value){status.textContent='Selecione a turma e a data da aula.';status.className='status-line error';return;}
