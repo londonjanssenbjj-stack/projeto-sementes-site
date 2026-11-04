@@ -947,8 +947,24 @@ async function renderAttendanceHistory(content){
       if(lessonError)throw lessonError;
       if(!lessons||!lessons.length){status.textContent='Nenhuma chamada encontrada para os filtros selecionados.';return;}
       const lessonIds=lessons.map(x=>x.id);
-      const {data:rows,error:attendanceError}=await supabaseClient.from('attendance').select('lesson_id,student_id,status,students(full_name)').in('lesson_id',lessonIds).limit(3000);
-      if(attendanceError)throw attendanceError;
+      // O Supabase limita cada resposta REST a 1.000 linhas. Paginar evita
+      // que o histórico some presenças quando o período ultrapassa esse limite.
+      const rows=[];
+      const attendancePageSize=1000;
+      let attendanceOffset=0;
+      while(true){
+        const {data:attendancePage,error:attendanceError}=await supabaseClient
+          .from('attendance')
+          .select('lesson_id,student_id,status,students(full_name)')
+          .in('lesson_id',lessonIds)
+          .order('lesson_id',{ascending:true})
+          .order('student_id',{ascending:true})
+          .range(attendanceOffset,attendanceOffset+attendancePageSize-1);
+        if(attendanceError)throw attendanceError;
+        rows.push(...(attendancePage||[]));
+        if(!attendancePage||attendancePage.length<attendancePageSize)break;
+        attendanceOffset+=attendancePageSize;
+      }
       const byLesson=new Map();
       (rows||[]).forEach(r=>{const v=byLesson.get(r.lesson_id)||{present:0,absent:0,excused:0};if(Object.prototype.hasOwnProperty.call(v,r.status))v[r.status]++;byLesson.set(r.lesson_id,v);});
       const table=node('table'),thead=node('thead'),head=node('tr');
