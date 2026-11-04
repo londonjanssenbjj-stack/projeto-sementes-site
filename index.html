@@ -1837,7 +1837,10 @@ $('resetBtn').addEventListener('click',async()=>{
        }catch(err){bioStatus.textContent=err.message||'Falha ao enviar a fotografia.';bioStatus.style.color='#9b1c1c';bioCapture.disabled=false;window.turnstile.reset(bioWidget);}
       });
      }else{
-      const note=document.createElement('p');note.style.cssText='font-size:13px;margin-top:12px;color:#8a5a00';note.textContent='Esta matrícula corresponde a um acesso familiar já existente. Para preservar a senha atual, entre na Área da Família com sua senha habitual; a biometria estará disponível no acompanhamento do aluno.';accessBox.appendChild(note);
+      const bioAccess=document.createElement('section');bioAccess.style.cssText='margin-top:18px;padding:18px;border:1px solid #d7b34b;border-radius:8px;background:#fff;color:#172131';
+      bioAccess.innerHTML='<h3 style="margin:0 0 8px;color:#0b1b30">Etapa final: biometria facial</h3><p style="font-size:13px;line-height:1.6;margin:0 0 12px">Esta matrícula corresponde a um acesso familiar já existente. Sua senha atual foi preservada. Para proteger a conta, entre no Portal do Responsável com seu telefone e sua senha habitual. Depois, abra <strong>Acompanhamento familiar</strong> e selecione <strong>Realizar biometria</strong> no cadastro do aluno. A câmera só será aberta após sua autorização e seu clique.</p><button id="postExistingBioAccess" type="button" class="btn btn-gold">Entrar e realizar biometria</button>';
+      accessBox.appendChild(bioAccess);
+      bioAccess.querySelector('#postExistingBioAccess').addEventListener('click',()=>{const portalButton=document.getElementById('openGuardianLogin');if(portalButton)portalButton.click();});
      }
     }catch(accountError){msg.textContent=accountError.message||'Falha ao criar acesso.';msg.style.color='#9b1c1c';btn.disabled=false;btn.textContent='Tentar novamente';if(window.turnstile)window.turnstile.reset(accessCaptcha);}
    });
