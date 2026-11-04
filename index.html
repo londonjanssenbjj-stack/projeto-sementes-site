@@ -1152,6 +1152,11 @@ async function renderAttendanceHistory(content){
         offset+=pageSize;
       }
       const byLesson=new Map();currentStudents=new Map();currentLessons=lessons;
+      if(currentProfile?.role==='admin'){
+        const {data:allStudents,error:allStudentsError}=await supabaseClient.from('students').select('id,full_name').order('full_name');
+        if(allStudentsError)throw allStudentsError;
+        (allStudents||[]).forEach(st=>currentStudents.set(st.id,{name:st.full_name||'Aluno',present:0,absent:0,excused:0,records:[]}));
+      }
       rows.forEach(r=>{
         const counts=byLesson.get(r.lesson_id)||{present:0,absent:0,excused:0,records:[]};
         if(Object.prototype.hasOwnProperty.call(counts,r.status))counts[r.status]++;
