@@ -960,7 +960,29 @@ async function renderAttendanceHistory(content){
     const metrics=node('div',undefined,'student-tools');
     const metric=(label,value)=>{const card=node('div',undefined,'status-line');card.style.padding='12px';card.style.border='1px solid var(--border,#e5e7eb)';card.style.borderRadius='8px';card.append(node('strong',String(value)),node('div',label));return card;};
     metrics.append(metric('Presenças',st.present),metric('Ausências',st.absent),metric('Faltas justificadas',st.excused),metric('Frequência',percentage.toFixed(1).replace('.',',')+'%'));
-    const explanation=node('p','Cálculo: presenças divididas pelo total de chamadas em que existe registro para este aluno.','status-line');
+    const explanation=node('p','O quadro mensal mostra a quantidade de presenças, ausências e justificativas em cada mês. O total geral permanece acima.','status-line');
+    const monthly=new Map();
+    st.records.forEach(rec=>{
+      const key=rec.date.slice(0,7);
+      const counts=monthly.get(key)||{present:0,absent:0,excused:0,total:0};
+      if(Object.prototype.hasOwnProperty.call(counts,rec.status))counts[rec.status]++;
+      counts.total++;
+      monthly.set(key,counts);
+    });
+    const monthNames=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const monthlyTitle=node('h3','Frequência por mês');
+    const monthlyTable=node('table'),monthlyHead=node('thead'),monthlyHeadRow=node('tr');
+    ['Mês','Presenças','Ausências','Justificadas','Total'].forEach(t=>monthlyHeadRow.append(node('th',t)));
+    monthlyHead.append(monthlyHeadRow);monthlyTable.append(monthlyHead);
+    const monthlyBody=node('tbody');
+    [...monthly.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([key,c])=>{
+      const [year,month]=key.split('-');
+      const tr=node('tr');
+      tr.append(node('td',monthNames[Number(month)-1]+' de '+year),node('td',String(c.present)),node('td',String(c.absent)),node('td',String(c.excused)),node('td',String(c.total)));
+      monthlyBody.append(tr);
+    });
+    monthlyTable.append(monthlyBody);
+    const tableTitle=node('h3','Detalhamento por aula');
     const table=node('table'),thead=node('thead'),head=node('tr');
     ['Data','Situação'].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
     const tbody=node('tbody');
@@ -968,7 +990,7 @@ async function renderAttendanceHistory(content){
       const tr=node('tr');const label=rec.status==='present'?'Presente':rec.status==='absent'?'Ausente':rec.status==='excused'?'Falta justificada':rec.status;
       tr.append(node('td',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR')),node('td',label));tbody.append(tr);
     });
-    table.append(tbody);individualWrap.append(heading,metrics,explanation,table);
+    table.append(tbody);individualWrap.append(heading,metrics,explanation,monthlyTitle,monthlyTable,tableTitle,table);
   }
   async function queryHistory(){
     searchBtn.disabled=true;generalWrap.replaceChildren();individualWrap.replaceChildren();summary.textContent='';status.textContent='Consultando chamadas…';
