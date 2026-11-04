@@ -1026,6 +1026,12 @@ async function renderAttendanceHistory(content){
     generalWrap.style.display='none';summary.style.display='none';individualWrap.style.display='';
     const st=currentStudents.get(selected);
     if(!st){individualWrap.append(node('p','Este aluno não possui registros no período selecionado.','status-line'));return;}
+    const recount=()=>{
+      st.present=st.records.filter(r=>r.status==='present').length;
+      st.absent=st.records.filter(r=>r.status==='absent').length;
+      st.excused=st.records.filter(r=>r.status==='excused').length;
+    };
+    recount();
     const calls=st.records.length;
     const percentage=calls?(st.present/calls)*100:0;
     const heading=node('h3',st.name);
@@ -1056,13 +1062,74 @@ async function renderAttendanceHistory(content){
     monthlyTable.append(monthlyBody);
     const tableTitle=node('h3','Detalhamento por aula');
     const table=node('table'),thead=node('thead'),head=node('tr');
-    ['Data','Situação'].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
+    ['Data','Situação',...(currentProfile?.role==='admin'?['Ação']:[])].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
     const tbody=node('tbody');
     st.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(rec=>{
       const tr=node('tr');const label=rec.status==='present'?'Presente':rec.status==='absent'?'Ausente':rec.status==='excused'?'Falta justificada':rec.status;
-      tr.append(node('td',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR')),node('td',label));tbody.append(tr);
+      tr.append(node('td',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR')),node('td',label));
+      if(currentProfile?.role==='admin'){
+        const actionCell=node('td');
+        const remove=node('button','Retirar aula','btn btn-outline small-btn');remove.type='button';
+        remove.addEventListener('click',async()=>{
+          if(!confirm('Retirar este registro de frequência do aluno nesta data?'))return;
+          remove.disabled=true;
+          try{
+            const {error}=await supabaseClient.from('attendance').delete().eq('lesson_id',rec.lesson_id).eq('student_id',selected);
+            if(error)throw error;
+            st.records=st.records.filter(x=>!(x.lesson_id===rec.lesson_id));
+            recount();renderIndividual();
+            status.textContent='Registro de frequência retirado com sucesso.';
+            status.className='status-line';
+          }catch(err){
+            status.textContent='Não foi possível retirar a aula: '+(err.message||String(err));
+            status.className='status-line error';remove.disabled=false;
+          }
+        });
+        actionCell.append(remove);tr.append(actionCell);
+      }
+      tbody.append(tr);
     });
-    table.append(tbody);individualWrap.append(heading,metrics,explanation,monthlyTitle,monthlyTable,tableTitle,table);
+    table.append(tbody);
+    individualWrap.append(heading,metrics,explanation,monthlyTitle,monthlyTable,tableTitle,table);
+    if(currentProfile?.role==='admin'){
+      const editor=node('section',undefined,'activity-card');editor.style.marginTop='18px';
+      editor.append(node('h3','Editar frequência individual'));
+      const editorTools=node('div',undefined,'student-tools');
+      const lessonClass=node('select',undefined,'search');lessonClass.setAttribute('aria-label','Turma da aula a inserir');
+      [...classSelect.options].filter(o=>o.value).forEach(o=>{const copy=node('option',o.textContent);copy.value=o.value;lessonClass.append(copy);});
+      if(classSelect.value)lessonClass.value=classSelect.value;
+      const lessonDate=node('input',undefined,'search');lessonDate.type='date';lessonDate.value=new Date().toISOString().slice(0,10);lessonDate.setAttribute('aria-label','Data da aula a inserir');
+      const lessonStatus=node('select',undefined,'search');lessonStatus.setAttribute('aria-label','Situação da frequência');
+      [['present','Presente'],['absent','Ausente'],['excused','Falta justificada']].forEach(([v,l])=>{const o=node('option',l);o.value=v;lessonStatus.append(o);});
+      const addLesson=node('button','Inserir aula','btn btn-gold small-btn');addLesson.type='button';
+      editorTools.append(lessonClass,lessonDate,lessonStatus,addLesson);
+      editor.append(editorTools,node('p','Insira um registro para este aluno em uma turma e data. Para retirar, use “Retirar aula” no registro correspondente.','status-line'));
+      individualWrap.append(editor);
+      addLesson.addEventListener('click',async()=>{
+        if(!lessonClass.value||!lessonDate.value){status.textContent='Selecione a turma e a data da aula.';status.className='status-line error';return;}
+        addLesson.disabled=true;
+        try{
+          let lesson=currentLessons.find(l=>l.class_id===lessonClass.value&&l.lesson_date===lessonDate.value);
+          if(!lesson){
+            const {data:newLesson,error:createError}=await supabaseClient.from('lessons').insert({class_id:lessonClass.value,lesson_date:lessonDate.value,status:'scheduled',created_by:currentProfile.id}).select('id,class_id,lesson_date,status,classes(name)').single();
+            if(createError)throw createError;
+            lesson=newLesson;currentLessons.push(lesson);
+          }
+          if(st.records.some(r=>r.lesson_id===lesson.id)){
+            throw new Error('Já existe um registro de frequência deste aluno nesta data e turma.');
+          }
+          const {error:insertError}=await supabaseClient.from('attendance').insert({lesson_id:lesson.id,student_id:selected,status:lessonStatus.value,recorded_by:currentProfile.id,updated_at:new Date().toISOString()});
+          if(insertError)throw insertError;
+          st.records.push({lesson_id:lesson.id,status:lessonStatus.value,date:lesson.lesson_date});
+          recount();renderIndividual();
+          status.textContent='Aula inserida na frequência do aluno com sucesso.';
+          status.className='status-line';
+        }catch(err){
+          status.textContent='Não foi possível inserir a aula: '+(err.message||String(err));
+          status.className='status-line error';
+        }finally{addLesson.disabled=false;}
+      });
+    }
   }
   async function queryHistory(){
     searchBtn.disabled=true;generalWrap.replaceChildren();individualWrap.replaceChildren();summary.textContent='';status.textContent='Consultando chamadas…';
