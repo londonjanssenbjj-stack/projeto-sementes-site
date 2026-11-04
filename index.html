@@ -1850,7 +1850,7 @@ $('resetBtn').addEventListener('click',async()=>{
        if(!existingToken){existingMessage.textContent='Conclua a verificação de segurança.';existingMessage.style.color='#9b1c1c';return;}
        existingButton.disabled=true;existingButton.textContent='Confirmando acesso…';
        try{
-        const existingLoginEmail=String(phone).replace(/\\D/g,'')+'@sementes.internal';
+        const existingLoginEmail=String(phone).replace(/\D/g,'')+'@sementes.internal';
         const {data:existingLogin,error:existingLoginError}=await supabaseClient.auth.signInWithPassword({email:existingLoginEmail,password:existingPass});
         existingPassword.value='';
         if(existingLoginError||!existingLogin.session)throw new Error('Não foi possível confirmar o acesso. Confira a senha e tente novamente.');
