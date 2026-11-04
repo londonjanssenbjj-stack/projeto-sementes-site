@@ -1062,14 +1062,15 @@ async function renderAttendanceHistory(content){
     monthlyTable.append(monthlyBody);
     const tableTitle=node('h3','Detalhamento por aula');
     const table=node('table'),thead=node('thead'),head=node('tr');
-    ['Data','Situação',...(currentProfile?.role==='admin'?['Ação']:[])].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
+    ['Data','Situação'].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
     const tbody=node('tbody');
     st.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(rec=>{
       const tr=node('tr');const label=rec.status==='present'?'Presente':rec.status==='absent'?'Ausente':rec.status==='excused'?'Falta justificada':rec.status;
-      tr.append(node('td',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR')),node('td',label));
+      const dateCell=node('td',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR'));
+      const situationCell=node('td',label);
       if(currentProfile?.role==='admin'){
-        const actionCell=node('td');
         const remove=node('button','Retirar aula','btn btn-outline small-btn');remove.type='button';
+        remove.style.display='inline-block';remove.style.marginLeft='12px';remove.style.whiteSpace='nowrap';
         remove.addEventListener('click',async()=>{
           if(!confirm('Retirar este registro de frequência do aluno nesta data?'))return;
           remove.disabled=true;
@@ -1085,8 +1086,9 @@ async function renderAttendanceHistory(content){
             status.className='status-line error';remove.disabled=false;
           }
         });
-        actionCell.append(remove);tr.append(actionCell);
+        situationCell.append(remove);
       }
+      tr.append(dateCell,situationCell);
       tbody.append(tr);
     });
     table.append(tbody);
