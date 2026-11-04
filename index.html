@@ -882,34 +882,49 @@ async function renderClassAttendance(content){
 }
 async function renderOverview(content){
   const panel=node('div',undefined,'dash-panel');
-  panel.append(node('h2','Indicadores do Projeto Sementes'),node('p','Indicadores atualizados diretamente do Supabase, respeitando o acesso do perfil autenticado.','status-line'));
+  panel.append(node('h2','Indicadores do Projeto Sementes'),node('p','Resumo dos alunos, das aulas realizadas e das atividades do projeto, atualizado diretamente do Supabase.','status-line'));
   const grid=node('div',undefined,'indicator-grid');
   const status=node('p','Atualizando indicadores…','status-line');
   panel.append(grid,status);content.append(panel);
   try{
-    const [studentsResult,classesResult,enrollmentsResult,attendanceResult,lecturesResult,actionsResult,neighborhoodsResult]=await Promise.all([
+    const [studentsResult,classesResult,attendanceCountResult,lecturesResult,actionsResult,neighborhoodsResult]=await Promise.all([
       supabaseClient.from('students').select('id',{count:'exact',head:true}),
       supabaseClient.from('classes').select('id',{count:'exact',head:true}).eq('is_active',true),
-      supabaseClient.from('class_enrollments').select('student_id').eq('active',true).limit(1000),
-      supabaseClient.from('attendance').select('student_id',{count:'exact',head:true}),
+      supabaseClient.from('attendance').select('id',{count:'exact',head:true}),
       supabaseClient.from('lectures').select('id',{count:'exact',head:true}).eq('status','completed'),
       supabaseClient.from('social_actions').select('id',{count:'exact',head:true}).eq('status','completed'),
       supabaseClient.from('students').select('neighborhood').not('neighborhood','is',null).limit(1000)
     ]);
-    const errors=[studentsResult,classesResult,enrollmentsResult,attendanceResult,lecturesResult,actionsResult,neighborhoodsResult].filter(x=>x.error);
+    const errors=[studentsResult,classesResult,attendanceCountResult,lecturesResult,actionsResult,neighborhoodsResult].filter(x=>x.error);
     if(errors.length)throw errors[0].error;
-    const enrolledUnique=new Set((enrollmentsResult.data||[]).map(x=>x.student_id).filter(Boolean)).size;
     const neighborhoods=new Set((neighborhoodsResult.data||[]).map(x=>String(x.neighborhood||'').trim().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR')).filter(Boolean)).size;
+    const lessonIds=new Set();let offset=0;const pageSize=1000;
+    while(true){
+      const {data:page,error}=await supabaseClient.from('attendance').select('lesson_id').order('lesson_id',{ascending:true}).range(offset,offset+pageSize-1);
+      if(error)throw error;
+      (page||[]).forEach(row=>{if(row.lesson_id)lessonIds.add(row.lesson_id);});
+      if(!page||page.length<pageSize)break;
+      offset+=pageSize;
+    }
+    let classDays=0;
+    if(lessonIds.size){
+      const ids=[...lessonIds];
+      for(let i=0;i<ids.length;i+=500){
+        const {data:lessonRows,error}=await supabaseClient.from('lessons').select('lesson_date').in('id',ids.slice(i,i+500));
+        if(error)throw error;
+        classDays+=new Set((lessonRows||[]).map(x=>x.lesson_date).filter(Boolean)).size;
+      }
+    }
     [
-      makeKpi('Alunos visíveis neste perfil',studentsResult.count??0),
+      makeKpi('Alunos cadastrados',studentsResult.count??0),
       makeKpi('Turmas ativas',classesResult.count??0),
-      makeKpi('Alunos em turmas ativas',enrolledUnique),
-      makeKpi('Registros de frequência',attendanceResult.count??0),
+      makeKpi('Dias de aula com chamada',classDays),
+      makeKpi('Registros de frequência',attendanceCountResult.count??0),
       makeKpi('Palestras realizadas',lecturesResult.count??0),
       makeKpi('Ações sociais concluídas',actionsResult.count??0),
       makeKpi('Bairros identificados',neighborhoods)
     ].forEach(x=>grid.append(x));
-    status.textContent='Atualizado em '+new Date().toLocaleString('pt-BR')+'. Os números refletem somente os registros que este perfil tem autorização para consultar.';
+    status.textContent='Atualizado em '+new Date().toLocaleString('pt-BR')+'. Os indicadores consideram os registros que este perfil tem autorização para consultar.';
   }catch(err){
     status.textContent='Não foi possível atualizar todos os indicadores: '+(err.message||String(err));
     status.className='status-line error';
