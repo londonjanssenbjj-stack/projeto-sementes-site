@@ -104,6 +104,16 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .attendance-identity strong{font-size:13px;color:#14263e;overflow-wrap:anywhere}
 #dashboard .attendance-identity span{font-size:11px;color:#697586}
 #dashboard .attendance-student-card select{width:100%}
+#dashboard .attendance-status-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#dashboard .attendance-status-btn{border:1px solid #d5d9e1;border-radius:8px;padding:9px 5px;background:#fff;font-size:11px;font-weight:800;line-height:1.2;min-height:40px}
+#dashboard .attendance-status-btn.present{color:#166534;border-color:#86efac;background:#f0fdf4}
+#dashboard .attendance-status-btn.absent{color:#991b1b;border-color:#fca5a5;background:#fef2f2}
+#dashboard .attendance-status-btn.excused{color:#854d0e;border-color:#fcd34d;background:#fffbeb}
+#dashboard .attendance-status-btn.active.present{background:#166534;border-color:#166534;color:#fff}
+#dashboard .attendance-status-btn.active.absent{background:#991b1b;border-color:#991b1b;color:#fff}
+#dashboard .attendance-status-btn.active.excused{background:#a16207;border-color:#a16207;color:#fff}
+#dashboard .attendance-status-btn:disabled{opacity:.55;cursor:wait}
+@media(max-width:520px){#dashboard .attendance-status-actions{grid-template-columns:1fr;gap:5px}#dashboard .attendance-status-btn{min-height:36px;padding:8px 5px}}
 @media(max-width:520px){#dashboard .attendance-cards{grid-template-columns:1fr 1fr;gap:8px}#dashboard .attendance-student-card{padding:10px}#dashboard .attendance-avatar{width:46px;height:46px;flex-basis:46px;font-size:15px}}
 #dashboard .report-actions{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0}
 @media print{
@@ -836,13 +846,57 @@ async function renderClassAttendance(content){
       const cards=node('div',undefined,'attendance-cards'),selectors=[];
       function refreshAttendanceCounts(){
         const totals={present:0,absent:0,excused:0,pending:0};
-        selectors.forEach(x=>{if(totals[x.select.value]!==undefined)totals[x.select.value]++;else totals.pending++;});
+        selectors.forEach(x=>{if(totals[x.status]!==undefined)totals[x.status]++;else totals.pending++;});
         attendanceCounts.replaceChildren();
         [['present','Presentes'],['absent','Ausentes'],['excused','Justificadas'],['pending','Pendentes']].forEach(([key,label])=>{const item=node('div',undefined,'attendance-count');item.append(node('strong',String(totals[key])),node('span',label));attendanceCounts.append(item);});
         return totals;
       }
-      markAll.addEventListener('click',()=>{selectors.forEach(x=>{x.select.value='present';});refreshAttendanceCounts();});
-
+      async function saveStudentStatus(item,newStatus){
+        const previousStatus=item.status;
+        item.buttons.forEach(button=>button.disabled=true);
+        status.textContent='Salvando presença de '+item.name+'…';
+        try{
+          const row={lesson_id:lessonId,student_id:item.student_id,status:newStatus,recorded_by:currentProfile.id,updated_at:new Date().toISOString()};
+          const {error:saveError}=await supabaseClient.from('attendance').upsert([row],{onConflict:'lesson_id,student_id'});
+          if(saveError)throw saveError;
+          item.status=newStatus;
+          item.buttons.forEach(button=>{
+            const active=button.dataset.status===newStatus;
+            button.classList.toggle('active',active);
+            button.setAttribute('aria-pressed',active?'true':'false');
+          });
+          refreshAttendanceCounts();
+          status.textContent='Presença de '+item.name+' salva: '+({present:'Presente',absent:'Ausente',excused:'Falta justificada'}[newStatus])+'.';
+          status.className='status-line';
+          const allMarked=selectors.length>0&&selectors.every(x=>x.status);
+          if(allMarked){
+            const {error:lessonUpdateError}=await supabaseClient.from('lessons').update({status:'completed'}).eq('id',lessonId);
+            if(lessonUpdateError){
+              status.textContent='Presença salva, mas não foi possível atualizar a situação da aula: '+(lessonUpdateError.message||String(lessonUpdateError));
+              status.className='status-line error';
+            }
+          }
+        }catch(err){
+          item.status=previousStatus;
+          item.buttons.forEach(button=>{
+            const active=button.dataset.status===previousStatus;
+            button.classList.toggle('active',active);
+            button.setAttribute('aria-pressed',active?'true':'false');
+          });
+          status.textContent='Não foi possível salvar a presença de '+item.name+': '+(err.message||String(err));
+          status.className='status-line error';
+        }finally{
+          item.buttons.forEach(button=>button.disabled=false);
+        }
+      }
+      markAll.addEventListener('click',async()=>{
+        markAll.disabled=true;
+        try{
+          for(const item of selectors){
+            if(item.status!=='present')await saveStudentStatus(item,'present');
+          }
+        }finally{markAll.disabled=false;}
+      });
       (students||[]).forEach(st=>{
         const card=node('article',undefined,'attendance-student-card');
         const initials=String(st.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
@@ -850,30 +904,20 @@ async function renderClassAttendance(content){
         const identity=node('div',undefined,'attendance-identity');
         identity.append(node('strong',st.full_name||'Aluno'),node('span','Faixa: '+(st.belt||'Não informada')));
         const top=node('div',undefined,'attendance-student-top');top.append(avatar,identity);
-        const sel=node('select',undefined,'search');sel.setAttribute('aria-label','Presença de '+st.full_name);
-        [['','Selecione a situação'],['present','Presente'],['absent','Ausente'],['excused','Falta justificada']].forEach(([v,label])=>{const o=node('option',label);o.value=v;sel.append(o);});
-        const old=existingMap.get(st.id);if(old)sel.value=old.status;
-        card.append(top,sel);cards.append(card);selectors.push({student_id:st.id,select:sel});sel.addEventListener('change',refreshAttendanceCounts);
+        const old=existingMap.get(st.id);
+        const actions=node('div',undefined,'attendance-status-actions');
+        const item={student_id:st.id,name:st.full_name||'Aluno',status:old?old.status:'',buttons:[]};
+        [['present','Presente'],['absent','Ausente'],['excused','Falta Justificada']].forEach(([value,label])=>{
+          const button=node('button',label,'attendance-status-btn '+value);
+          button.type='button';button.dataset.status=value;button.setAttribute('aria-pressed',item.status===value?'true':'false');
+          if(item.status===value)button.classList.add('active');
+          button.addEventListener('click',()=>{if(item.status!==value)saveStudentStatus(item,value);});
+          item.buttons.push(button);actions.append(button);
+        });
+        card.append(top,actions);cards.append(card);selectors.push(item);
       });
       rosterWrap.append(cards);refreshAttendanceCounts();
-      const save=node('button','Salvar chamada','btn btn-gold small-btn');save.type='button';save.style.marginTop='14px';
-      save.addEventListener('click',async()=>{
-        const missing=selectors.filter(x=>!x.select.value);
-        if(missing.length){status.textContent='Marque a situação de presença de todos os '+missing.length+' aluno(s) pendente(s) antes de salvar.';return;}
-        save.disabled=true;save.textContent='Salvando…';
-        try{
-          const rows=selectors.map(x=>({lesson_id:lessonId,student_id:x.student_id,status:x.select.value,recorded_by:currentProfile.id,updated_at:new Date().toISOString()}));
-          const {error:saveError}=await supabaseClient.from('attendance').upsert(rows,{onConflict:'lesson_id,student_id'});
-          if(saveError)throw saveError;
-          const {error:lessonUpdateError}=await supabaseClient.from('lessons').update({status:'completed'}).eq('id',lessonId);
-          if(lessonUpdateError)throw lessonUpdateError;
-          status.textContent='Chamada salva com sucesso: '+rows.length+' alunos registrados em '+new Date(lessonDate+'T12:00:00').toLocaleDateString('pt-BR')+'.';
-          status.className='status-line';
-          save.textContent='Chamada salva';
-        }catch(err){status.textContent='Erro ao salvar a chamada: '+(err.message||String(err));save.disabled=false;save.textContent='Tentar salvar novamente';}
-      });
-      rosterWrap.append(save);
-      status.textContent='Confira cada aluno e selecione Presente, Ausente ou Falta justificada. A chamada só será gravada após clicar em “Salvar chamada”.';
+      status.textContent='Clique em Presente, Ausente ou Falta Justificada. Cada alteração será gravada imediatamente no Supabase.';
     }catch(err){status.textContent='Não foi possível abrir a chamada: '+(err.message||String(err));}
     finally{loadBtn.disabled=false;loadBtn.textContent='Atualizar chamada';}
   }
@@ -887,17 +931,27 @@ async function renderOverview(content){
   const status=node('p','Atualizando indicadores…','status-line');
   panel.append(grid,status);content.append(panel);
   try{
-    const [studentsResult,classesResult,attendanceCountResult,lecturesResult,actionsResult,neighborhoodsResult]=await Promise.all([
+    const [studentsResult,classesResult,attendanceCountResult,lecturesResult,actionsResult]=await Promise.all([
       supabaseClient.from('students').select('id',{count:'exact',head:true}),
       supabaseClient.from('classes').select('id',{count:'exact',head:true}).eq('is_active',true),
       supabaseClient.from('attendance').select('lesson_id',{count:'exact',head:true}),
       supabaseClient.from('lectures').select('id',{count:'exact',head:true}).eq('status','completed'),
-      supabaseClient.from('social_actions').select('id',{count:'exact',head:true}).eq('status','completed'),
-      supabaseClient.from('students').select('neighborhood').not('neighborhood','is',null).limit(1000)
+      supabaseClient.from('social_actions').select('id',{count:'exact',head:true}).eq('status','completed')
     ]);
-    const errors=[studentsResult,classesResult,attendanceCountResult,lecturesResult,actionsResult,neighborhoodsResult].filter(x=>x.error);
+    const errors=[studentsResult,classesResult,attendanceCountResult,lecturesResult,actionsResult].filter(x=>x.error);
     if(errors.length)throw errors[0].error;
-    const neighborhoods=new Set((neighborhoodsResult.data||[]).map(x=>String(x.neighborhood||'').trim().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('pt-BR')).filter(Boolean)).size;
+    const neighborhoodSet=new Set();let neighborhoodOffset=0;const neighborhoodPageSize=1000;
+    while(true){
+      const {data:neighborhoodPage,error:neighborhoodError}=await supabaseClient.from('students').select('id,neighborhood').not('neighborhood','is',null).order('id',{ascending:true}).range(neighborhoodOffset,neighborhoodOffset+neighborhoodPageSize-1);
+      if(neighborhoodError)throw neighborhoodError;
+      (neighborhoodPage||[]).forEach(row=>{
+        const value=String(row.neighborhood||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+        if(value)neighborhoodSet.add(value);
+      });
+      if(!neighborhoodPage||neighborhoodPage.length<neighborhoodPageSize)break;
+      neighborhoodOffset+=neighborhoodPageSize;
+    }
+    const neighborhoods=neighborhoodSet.size;
     const lessonIds=new Set();let offset=0;const pageSize=1000;
     while(true){
       const {data:page,error}=await supabaseClient.from('attendance').select('lesson_id').order('lesson_id',{ascending:true}).range(offset,offset+pageSize-1);
@@ -918,7 +972,7 @@ async function renderOverview(content){
     [
       makeKpi('Alunos cadastrados',studentsResult.count??0),
       makeKpi('Turmas ativas',classesResult.count??0),
-      makeKpi('Dias de aula com chamada',classDays),
+      makeKpi('Dias de Aula',classDays),
       makeKpi('Registros de frequência',attendanceCountResult.count??0),
       makeKpi('Palestras realizadas',lecturesResult.count??0),
       makeKpi('Ações sociais concluídas',actionsResult.count??0),
@@ -1352,8 +1406,8 @@ async function renderStudents(content){
   const exportBtn=node('button','Exportar CSV','btn btn-gold small-btn');exportBtn.type='button';
   tools.append(search,beltFilter,exportBtn);
   const summary=node('div',undefined,'student-summary');
-  const totalBox=node('div'),shownBox=node('div'),beltBox=node('div'),bioBox=node('div');
-  totalBox.append(node('strong','—'),node('span','Alunos ativos'));shownBox.append(node('strong','—'),node('span','Na pesquisa'));beltBox.append(node('strong','—'),node('span','Faixas distintas'));bioBox.append(node('strong','—'),node('span','Biometrias pendentes'));summary.append(totalBox,shownBox,beltBox,bioBox);
+  const totalBox=node('div'),beltBox=node('div'),bioBox=node('div');
+  totalBox.append(node('strong','—'),node('span','Alunos ativos'));beltBox.append(node('strong','—'),node('span','Faixas distintas'));bioBox.append(node('strong','—'),node('span','Biometrias pendentes'));summary.append(totalBox,beltBox,bioBox);
   const status=node('div','Consultando banco de dados…','status-line');const tableWrap=node('div',undefined,'table-wrap');panel.append(tools,summary,status,tableWrap);content.append(panel);
   try{
     const {data,error}=await supabaseClient.from('students').select('id,full_name,belt,enrollment_date,source_row_number,biometric_completed').order('full_name',{ascending:true}).limit(1000);
@@ -1367,7 +1421,7 @@ async function renderStudents(content){
     });
     function draw(){
       const rows=filteredRows();const belts=new Set(studentsCache.map(s=>s.belt).filter(Boolean));
-      totalBox.querySelector('strong').textContent=String(studentsCache.length);shownBox.querySelector('strong').textContent=String(rows.length);beltBox.querySelector('strong').textContent=String(belts.size);bioBox.querySelector('strong').textContent=String(studentsCache.filter(s=>!s.biometric_completed).length);
+      totalBox.querySelector('strong').textContent=String(studentsCache.length);beltBox.querySelector('strong').textContent=String(belts.size);bioBox.querySelector('strong').textContent=String(studentsCache.filter(s=>!s.biometric_completed).length);
       status.textContent='Dados recebidos do Supabase: '+studentsCache.length+' registros. Use a pesquisa ou o filtro e exporte a lista quando necessário.';
       tableWrap.replaceChildren();
       if(!rows.length){tableWrap.append(node('div','Nenhum aluno encontrado para os filtros selecionados.','empty'));return;}
