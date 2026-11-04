@@ -890,7 +890,7 @@ async function renderOverview(content){
     const [studentsResult,classesResult,attendanceCountResult,lecturesResult,actionsResult,neighborhoodsResult]=await Promise.all([
       supabaseClient.from('students').select('id',{count:'exact',head:true}),
       supabaseClient.from('classes').select('id',{count:'exact',head:true}).eq('is_active',true),
-      supabaseClient.from('attendance').select('id',{count:'exact',head:true}),
+      supabaseClient.from('attendance').select('lesson_id',{count:'exact',head:true}),
       supabaseClient.from('lectures').select('id',{count:'exact',head:true}).eq('status','completed'),
       supabaseClient.from('social_actions').select('id',{count:'exact',head:true}).eq('status','completed'),
       supabaseClient.from('students').select('neighborhood').not('neighborhood','is',null).limit(1000)
