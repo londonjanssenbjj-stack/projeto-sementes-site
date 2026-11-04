@@ -148,6 +148,9 @@ footer{background:#07111f;color:#d4dbe5;padding:48px 0 22px}.footer-grid{display
 #dashboard .student-summary strong{display:block;font-size:21px;color:#0b1b30}
 #dashboard .student-summary span{font-size:11px;color:#5d6673}
 #dashboard .table-wrap{overflow:auto;margin-top:14px}
+#dashboard .student-name-cell{display:flex;align-items:center;gap:10px;min-width:190px}
+#dashboard .student-list-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;position:relative;overflow:hidden;background:#102b49;color:#e7c66e;font:800 13px Manrope,sans-serif;border:2px solid #d9bd70}
+#dashboard .student-list-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
 #dashboard table{width:100%;border-collapse:collapse;font-size:13px}
 #dashboard th,#dashboard td{text-align:left;padding:11px;border-bottom:1px solid #eaecf0;white-space:nowrap}
 #dashboard th{background:#f8f9fb;color:#344054}
@@ -1413,6 +1416,20 @@ async function renderStudents(content){
     const {data,error}=await supabaseClient.from('students').select('id,full_name,belt,enrollment_date,source_row_number,biometric_completed').order('full_name',{ascending:true}).limit(1000);
     if(error)throw error;
     studentsCache=Array.isArray(data)?data:[];
+    const studentPhotoUrls=new Map();
+    try{
+      const studentIds=studentsCache.map(s=>s.id).filter(Boolean);
+      if(studentIds.length){
+        const {data:photoRecords,error:photoError}=await supabaseClient.from('enrollment_submissions').select('student_id,facial_image_storage_path').eq('facial_biometrics_consent',true).not('facial_image_storage_path','is',null).in('student_id',studentIds);
+        if(!photoError&&Array.isArray(photoRecords)){
+          for(const photoRecord of photoRecords){
+            if(!photoRecord.student_id||!photoRecord.facial_image_storage_path)continue;
+            const {data:signedPhoto,error:signedPhotoError}=await supabaseClient.storage.from('biometria-facial').createSignedUrl(photoRecord.facial_image_storage_path,3600);
+            if(!signedPhotoError&&signedPhoto?.signedUrl)studentPhotoUrls.set(photoRecord.student_id,signedPhoto.signedUrl);
+          }
+        }
+      }
+    }catch(photoLoadError){console.warn('As fotos de perfil não puderam ser carregadas; os círculos de identificação serão mantidos.',photoLoadError);}
     function filteredRows(){const q=search.value.trim().toLocaleLowerCase('pt-BR'),belt=beltFilter.value;return studentsCache.filter(s=>(!q||String(s.full_name??'').toLocaleLowerCase('pt-BR').includes(q))&&(!belt||String(s.belt??'').toLocaleLowerCase('pt-BR')===belt.toLocaleLowerCase('pt-BR')));}
     function csvEscape(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
     exportBtn.addEventListener('click',()=>{
@@ -1426,7 +1443,7 @@ async function renderStudents(content){
       tableWrap.replaceChildren();
       if(!rows.length){tableWrap.append(node('div','Nenhum aluno encontrado para os filtros selecionados.','empty'));return;}
       const table=node('table'),thead=node('thead'),hr=node('tr');['Nome do aluno','Faixa','Data de matrícula','Biometria','Nº de origem','Ficha'].forEach(t=>hr.append(node('th',t)));thead.append(hr);table.append(thead);const tbody=node('tbody');
-      rows.forEach(s=>{const tr=node('tr');tr.append(node('td',String(s.full_name??'—')),node('td',String(s.belt??'—')),node('td',String(s.enrollment_date??'—')),node('td',s.biometric_completed?'Concluída':'Pendente'),node('td',String(s.source_row_number??'—')));const td=node('td');const open=node('button','Abrir ficha','student-row-btn');open.type='button';open.addEventListener('click',()=>openStudentFicha(s.id));td.append(open);tr.append(td);tbody.append(tr);});table.append(tbody);tableWrap.append(table);
+      rows.forEach(s=>{const tr=node('tr');const nameCell=node('td');const nameWrap=node('div',undefined,'student-name-cell');const initials=String(s.full_name||'Aluno').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();const avatar=node('div',initials||'AL','student-list-avatar');avatar.setAttribute('aria-label',studentPhotoUrls.has(s.id)?'Fotografia autorizada do aluno':'Foto não cadastrada; identificação reservada');const photoUrl=studentPhotoUrls.get(s.id);if(photoUrl&&s.biometric_completed){const photo=node('img');photo.src=photoUrl;photo.alt='Foto do aluno';photo.loading='lazy';photo.onerror=()=>{photo.remove();};avatar.append(photo);}nameWrap.append(avatar,node('span',String(s.full_name??'—')));nameCell.append(nameWrap);tr.append(nameCell,node('td',String(s.belt??'—')),node('td',String(s.enrollment_date??'—')),node('td',s.biometric_completed?'Concluída':'Pendente'),node('td',String(s.source_row_number??'—')));const td=node('td');const open=node('button','Abrir ficha','student-row-btn');open.type='button';open.addEventListener('click',()=>openStudentFicha(s.id));td.append(open);tr.append(td);tbody.append(tr);});table.append(tbody);tableWrap.append(table);
     }
     draw();search.addEventListener('input',draw);beltFilter.addEventListener('change',draw);
   }catch(err){status.remove();summary.remove();tools.remove();tableWrap.append(node('div','Não foi possível carregar a lista de alunos.','error-box'),node('p','A consulta depende das permissões RLS e dos nomes das colunas da tabela students. Mensagem retornada: '+(err.message||String(err)),'status-line'));}
