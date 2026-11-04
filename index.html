@@ -917,15 +917,22 @@ async function renderOverview(content){
 }
 async function renderAttendanceHistory(content){
   const panel=node('div',undefined,'dash-panel');
-  panel.append(node('h2','Histórico de frequência'),node('p','Consulte as chamadas registradas por turma e período. A listagem segue as permissões do seu perfil.','status-line'));
+  panel.append(node('h2','Histórico de frequência'),node('p','Consulte as chamadas registradas por turma e período. Abra cada mês e cada data para conferir os alunos. A listagem segue as permissões do seu perfil.','status-line'));
   const toolsBox=node('div',undefined,'student-tools');
   const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Filtrar histórico por turma');
   const from=node('input',undefined,'search');from.type='date';from.setAttribute('aria-label','Data inicial');
   const to=node('input',undefined,'search');to.type='date';to.setAttribute('aria-label','Data final');
   const searchBtn=node('button','Consultar histórico','btn btn-gold small-btn');searchBtn.type='button';
   toolsBox.append(classSelect,from,to,searchBtn);
-  const status=node('p','Carregando filtros…','status-line'),wrap=node('div',undefined,'table-wrap');
-  panel.append(toolsBox,status,wrap);content.append(panel);
+  const individualBox=node('div',undefined,'student-tools');
+  const studentSelect=node('select',undefined,'search');studentSelect.setAttribute('aria-label','Consultar frequência individual');
+  const individualStatus=node('div',undefined,'status-line');
+  const exportBtn=node('button','Exportar CSV','btn btn-outline small-btn');exportBtn.type='button';
+  const printBtn=node('button','Imprimir / salvar PDF','btn btn-outline small-btn');printBtn.type='button';
+  individualBox.append(studentSelect,exportBtn,printBtn);
+  const status=node('p','Carregando filtros…','status-line'),summary=node('div',undefined,'status-line'),wrap=node('div',undefined,'table-wrap');
+  panel.append(toolsBox,individualBox,summary,individualStatus,status,wrap);content.append(panel);
+  let exportRows=[];
   try{
     const {data:classes,error:classError}=await supabaseClient.from('classes').select('id,name').eq('is_active',true).order('name');
     if(classError)throw classError;
@@ -934,7 +941,7 @@ async function renderAttendanceHistory(content){
     status.textContent='Filtros prontos. Escolha o período e consulte.';
   }catch(err){status.textContent='Erro ao carregar turmas: '+(err.message||String(err));return;}
   async function queryHistory(){
-    searchBtn.disabled=true;wrap.replaceChildren();status.textContent='Consultando chamadas…';
+    searchBtn.disabled=true;wrap.replaceChildren();summary.textContent='';individualStatus.textContent='';status.textContent='Consultando chamadas…';
     try{
       let lessonsQuery=supabaseClient.from('lessons').select('id,class_id,lesson_date,status,classes(name)').order('lesson_date',{ascending:false}).limit(300);
       if(classSelect.value)lessonsQuery=lessonsQuery.eq('class_id',classSelect.value);
@@ -942,40 +949,93 @@ async function renderAttendanceHistory(content){
       if(to.value)lessonsQuery=lessonsQuery.lte('lesson_date',to.value);
       const {data:lessons,error:lessonError}=await lessonsQuery;
       if(lessonError)throw lessonError;
-      if(!lessons||!lessons.length){status.textContent='Nenhuma chamada encontrada para os filtros selecionados.';return;}
+      if(!lessons||!lessons.length){status.textContent='Nenhuma chamada encontrada para os filtros selecionados.';studentSelect.replaceChildren();return;}
       const lessonIds=lessons.map(x=>x.id);
-      // O Supabase limita cada resposta REST a 1.000 linhas. Paginar evita
-      // que o histórico some presenças quando o período ultrapassa esse limite.
-      const rows=[];
-      const attendancePageSize=1000;
-      let attendanceOffset=0;
+      const rows=[];const attendancePageSize=1000;let attendanceOffset=0;
       while(true){
-        const {data:attendancePage,error:attendanceError}=await supabaseClient
-          .from('attendance')
-          .select('lesson_id,student_id,status,students(full_name)')
-          .in('lesson_id',lessonIds)
-          .order('lesson_id',{ascending:true})
-          .order('student_id',{ascending:true})
-          .range(attendanceOffset,attendanceOffset+attendancePageSize-1);
+        const {data:attendancePage,error:attendanceError}=await supabaseClient.from('attendance').select('lesson_id,student_id,status,students(full_name)').in('lesson_id',lessonIds).order('lesson_id',{ascending:true}).order('student_id',{ascending:true}).range(attendanceOffset,attendanceOffset+attendancePageSize-1);
         if(attendanceError)throw attendanceError;
         rows.push(...(attendancePage||[]));
         if(!attendancePage||attendancePage.length<attendancePageSize)break;
         attendanceOffset+=attendancePageSize;
       }
-      const byLesson=new Map();
-      (rows||[]).forEach(r=>{const v=byLesson.get(r.lesson_id)||{present:0,absent:0,excused:0};if(Object.prototype.hasOwnProperty.call(v,r.status))v[r.status]++;byLesson.set(r.lesson_id,v);});
-      // Exibe somente aulas com ao menos um registro de chamada salvo.
-      const lessonsWithAttendance=lessons.filter(l=>(byLesson.get(l.id)!==undefined));
-      const table=node('table'),thead=node('thead'),head=node('tr');
-      ['Data','Turma','Presentes','Ausentes','Justificadas','Total lançado'].forEach(x=>head.append(node('th',x)));thead.append(head);table.append(thead);
-      const tbody=node('tbody');
-      lessonsWithAttendance.forEach(l=>{const c=byLesson.get(l.id);const tr=node('tr');tr.append(node('td',new Date(l.lesson_date+'T12:00:00').toLocaleDateString('pt-BR')),node('td',l.classes?.name||'Turma'),node('td',String(c.present)),node('td',String(c.absent)),node('td',String(c.excused)),node('td',String(c.present+c.absent+c.excused)));tbody.append(tr);});
-      table.append(tbody);wrap.append(table);
-      status.textContent=lessonsWithAttendance.length+' aula(s) com chamada registrada. Registros de presença visíveis: '+(rows||[]).length+'.';
+      const byLesson=new Map();const byStudent=new Map();
+      rows.forEach(r=>{
+        const counts=byLesson.get(r.lesson_id)||{present:0,absent:0,excused:0,records:[]};
+        if(Object.prototype.hasOwnProperty.call(counts,r.status))counts[r.status]++;
+        counts.records.push(r);byLesson.set(r.lesson_id,counts);
+        const student=byStudent.get(r.student_id)||{name:r.students?.full_name||'Aluno',present:0,absent:0,excused:0,records:[]};
+        if(Object.prototype.hasOwnProperty.call(student,r.status))student[r.status]++;
+        student.records.push({lesson_id:r.lesson_id,status:r.status,date:lessons.find(l=>l.id===r.lesson_id)?.lesson_date||''});
+        byStudent.set(r.student_id,student);
+      });
+      const recordedLessons=lessons.filter(l=>byLesson.has(l.id));
+      exportRows=[];
+      const students=[...byStudent.entries()].map(([id,v])=>({id,...v})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+      studentSelect.replaceChildren();const studentAll=node('option','Todos os alunos — visão geral');studentAll.value='';studentSelect.append(studentAll);
+      students.forEach(st=>{const o=node('option',st.name);o.value=st.id;studentSelect.append(o);});
+      const totalPresent=rows.filter(r=>r.status==='present').length;
+      summary.textContent=recordedLessons.length+' chamada(s) registradas • '+rows.length+' registros • '+students.length+' alunos com registros • '+totalPresent+' presenças.';
+      const monthNames=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+      const months=new Map();
+      recordedLessons.forEach(l=>{const key=l.lesson_date.slice(0,7);const list=months.get(key)||[];list.push(l);months.set(key,list);});
+      const monthWrap=node('div');
+      function renderStudentDetail(){
+        const selected=studentSelect.value;
+        individualStatus.replaceChildren();
+        if(!selected){individualStatus.textContent='Selecione um aluno para consultar sua frequência individual.';return;}
+        const st=byStudent.get(selected);
+        if(!st){individualStatus.textContent='Não há registros desse aluno no período selecionado.';return;}
+        const calls=st.records.length,percentage=calls?((st.present/calls)*100):0;
+        const title=node('h3',st.name);const metrics=node('p','Presenças: '+st.present+' • Ausências: '+st.absent+' • Justificadas: '+st.excused+' • Chamadas com registro: '+calls+' • Frequência sobre registros individuais: '+percentage.toFixed(1).replace('.',',')+'%','status-line');
+        individualStatus.append(title,metrics);
+        const detail=node('table'),thead=node('thead'),hr=node('tr');
+        ['Data','Situação'].forEach(t=>hr.append(node('th',t)));thead.append(hr);detail.append(thead);
+        const body=node('tbody');
+        st.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(rec=>{
+          const tr=node('tr');const label=rec.status==='present'?'Presente':rec.status==='absent'?'Ausente':rec.status==='excused'?'Falta justificada':rec.status;
+          tr.append(node('td',new Date(rec.date+'T12:00:00').toLocaleDateString('pt-BR')),node('td',label));body.append(tr);
+        });
+        detail.append(body);individualStatus.append(detail);
+      }
+      studentSelect.onchange=renderStudentDetail;
+      recordedLessons.forEach(l=>{
+        const c=byLesson.get(l.id);const d=new Date(l.lesson_date+'T12:00:00');const monthKey=l.lesson_date.slice(0,7);
+        const group=months.get(monthKey)||[]; 
+      });
+      [...months.entries()].sort((a,b)=>b[0].localeCompare(a[0])).forEach(([key,monthLessons])=>{
+        const [year,month]=key.split('-');const monthDetails=node('details');monthDetails.open=false;
+        const monthSummary=node('summary',monthNames[Number(month)-1]+' de '+year+' • '+monthLessons.length+' chamada(s)');
+        monthDetails.append(monthSummary);
+        monthLessons.sort((a,b)=>b.lesson_date.localeCompare(a.lesson_date)).forEach(l=>{
+          const c=byLesson.get(l.id);const lessonDetails=node('details');lessonDetails.style.margin='10px 0';lessonDetails.style.padding='10px';lessonDetails.style.border='1px solid var(--border,#e5e7eb)';lessonDetails.style.borderRadius='8px';
+          const lessonSummary=node('summary',new Date(l.lesson_date+'T12:00:00').toLocaleDateString('pt-BR')+' • '+(l.classes?.name||'Turma')+' • P: '+c.present+' | A: '+c.absent+' | J: '+c.excused);
+          lessonDetails.append(lessonSummary);
+          const table=node('table'),thead=node('thead'),head=node('tr');
+          ['Aluno','Situação'].forEach(t=>head.append(node('th',t)));thead.append(head);table.append(thead);
+          const tbody=node('tbody');
+          c.records.slice().sort((a,b)=>(a.students?.full_name||'').localeCompare(b.students?.full_name||'','pt-BR')).forEach(r=>{
+            const tr=node('tr');const label=r.status==='present'?'Presente':r.status==='absent'?'Ausente':r.status==='excused'?'Falta justificada':r.status;
+            tr.append(node('td',r.students?.full_name||'Aluno'),node('td',label));tbody.append(tr);
+            exportRows.push({date:l.lesson_date,className:l.classes?.name||'Turma',student:r.students?.full_name||'Aluno',status:label});
+          });
+          table.append(tbody);lessonDetails.append(table);monthDetails.append(lessonDetails);
+        });
+        monthWrap.append(monthDetails);
+      });
+      wrap.append(monthWrap);
+      status.textContent=recordedLessons.length+' aula(s) com chamada registrada. Abra um mês e uma data para ver os alunos.';
+      renderStudentDetail();
     }catch(err){status.textContent='Não foi possível consultar o histórico: '+(err.message||String(err));}
     finally{searchBtn.disabled=false;}
   }
   searchBtn.addEventListener('click',queryHistory);
+  exportBtn.addEventListener('click',()=>{
+    if(!exportRows.length){status.textContent='Não há registros para exportar.';return;}
+    const csv=[['Data','Turma','Aluno','Situação'],...exportRows.map(r=>[new Date(r.date+'T12:00:00').toLocaleDateString('pt-BR'),r.className,r.student,r.status])].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=node('a');a.href=url;a.download='frequencia-projeto-sementes.csv';a.click();URL.revokeObjectURL(url);
+  });
+  printBtn.addEventListener('click',()=>window.print());
   queryHistory();
 }
 async function renderTechnicalProgress(content){
