@@ -747,7 +747,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
   if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
 
-  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,health_history,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
+  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
   if(healthError)console.warn('Histórico de saúde indisponível para esta conta:',healthError.message);
   const healthByStudent=new Map((healthRecords||[]).map(x=>[x.student_id,x]));
   const familyTitle=node('h2','Acompanhamento familiar');
@@ -761,6 +761,37 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     const thead=node('thead'),trh=node('tr');headers.forEach(h=>trh.append(node('th',h)));thead.append(trh);table.append(thead);
     const tbody=node('tbody');rows.forEach(row=>{const tr=node('tr');row.forEach(v=>tr.append(node('td',String(v??'—'))));tbody.append(tr);});table.append(tbody);wrap.append(table);box.append(wrap);
   };
+  if(view==='guardian-students'){
+    const box=section('Alunos vinculados','Dados cadastrais e acompanhamento individual dos alunos autorizados para esta conta.');
+    const [photoUrls,classLinks,attendanceResult,evaluationResult,graduationResult]=await Promise.all([
+      getAuthorizedBiometricPhotoUrls(ids).catch(()=>new Map()),
+      supabaseClient.from('class_enrollments').select('student_id,class_id').in('student_id',ids).eq('active',true),
+      supabaseClient.from('attendance').select('student_id,status').in('student_id',ids).limit(1000),
+      supabaseClient.from('technical_evaluations').select('student_id,evaluated_on,evaluation').in('student_id',ids).order('evaluated_on',{ascending:false}).limit(200),
+      supabaseClient.from('graduations').select('student_id,belt,degrees,awarded_on,note').in('student_id',ids).order('awarded_on',{ascending:false}).limit(200)
+    ]);
+    const classIds=[...new Set((classLinks.data||[]).map(x=>x.class_id).filter(Boolean))];
+    const classResult=classIds.length?await supabaseClient.from('classes').select('id,name').in('id',classIds):{data:[]};
+    const classNames=new Map((classResult.data||[]).map(x=>[x.id,x.name]));
+    children.forEach(ch=>{
+      const card=node('article',undefined,'activity-card');card.style.cssText='padding:16px;margin-bottom:14px';
+      const head=node('div',undefined,'student-tools');head.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap';
+      const photoUrl=photoUrls.get(ch.id);
+      if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(ch.full_name||'aluno');img.loading='lazy';img.style.cssText='width:76px;height:76px;object-fit:cover;border-radius:50%';head.append(img);}
+      const identity=node('div');identity.append(node('h3',ch.full_name||'Aluno'),node('p','Faixa: '+(ch.belt||'Não informada'),'status-line'));head.append(identity);card.append(head);
+      const classes=(classLinks.data||[]).filter(x=>x.student_id===ch.id).map(x=>classNames.get(x.class_id)).filter(Boolean);
+      const totals=(attendanceResult.data||[]).filter(x=>x.student_id===ch.id).reduce((a,x)=>{a.total++;if(x.status==='present')a.present++;return a;},{present:0,total:0});
+      const latestEval=(evaluationResult.data||[]).find(x=>x.student_id===ch.id);
+      const latestGrad=(graduationResult.data||[]).find(x=>x.student_id===ch.id);
+      const details=node('div',undefined,'status-line');
+      details.append(node('p','Nascimento: '+fmtDate(ch.birth_date)+' • Matrícula: '+fmtDate(ch.enrollment_date)),node('p','Turma: '+(classes.join(', ')||'Não informada')),node('p','Frequência registrada: '+(totals.total?Math.round(totals.present/totals.total*100)+'%':'Sem registros')),node('p','Última avaliação: '+(latestEval?fmtDate(latestEval.evaluated_on)+' — '+(latestEval.evaluation||'Registro realizado'):'Sem avaliação registrada')),node('p','Última graduação: '+(latestGrad?(latestGrad.belt||'Faixa não informada')+' • '+fmtDate(latestGrad.awarded_on):'Sem graduação registrada')));
+      card.append(details);
+      const bio=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bio.style.fontWeight='700';bio.style.color=ch.biometric_completed?'#16803c':'#9a6b00';card.append(bio);
+      appendStudentHealthInfo(card,healthByStudent.get(ch.id),ch);
+      box.append(card);
+    });
+    return;
+  }
   if(view==='guardian-overview'){
     const box=section('Resumo dos seus alunos','Acompanhamento restrito aos alunos vinculados à sua conta.');
     const [attendanceResult,evaluationResult,graduationResult,enrollmentResult,activityHistoryResult,competitionHistoryResult]=await Promise.all([
