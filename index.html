@@ -731,10 +731,38 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   };
   if(view==='guardian-overview'){
     const box=section('Resumo dos seus alunos','Acompanhamento restrito aos alunos vinculados à sua conta.');
+    const [attendanceResult,evaluationResult,graduationResult,enrollmentResult]=await Promise.all([
+      supabaseClient.from('attendance').select('student_id,status').in('student_id',ids).limit(1000),
+      supabaseClient.from('technical_evaluations').select('student_id,evaluated_on,evaluation').in('student_id',ids).order('evaluated_on',{ascending:false}).limit(200),
+      supabaseClient.from('graduations').select('student_id,belt,degrees,awarded_on').in('student_id',ids).order('awarded_on',{ascending:false}).limit(200),
+      supabaseClient.from('class_enrollments').select('student_id,class_id').in('student_id',ids).eq('active',true)
+    ]);
+    const attendanceTotals=new Map();
+    (attendanceResult.data||[]).forEach(x=>{const t=attendanceTotals.get(x.student_id)||{present:0,total:0};t.total++;if(x.status==='present')t.present++;attendanceTotals.set(x.student_id,t);});
+    const avgFrequency=children.length?Math.round(children.reduce((sum,ch)=>{const t=attendanceTotals.get(ch.id);return sum+(t&&t.total?t.present/t.total*100:0);},0)/children.length):0;
     const kpis=node('div',undefined,'kpis');
-    kpis.append(makeKpi('Alunos vinculados',children.length),makeKpi('Biometrias registradas',children.filter(x=>x.biometric_completed).length),makeKpi('Biometrias pendentes',children.filter(x=>!x.biometric_completed).length));
+    kpis.append(makeKpi('Alunos vinculados',children.length),makeKpi('Frequência média',avgFrequency+'%'),makeKpi('Biometrias concluídas',children.filter(x=>x.biometric_completed).length),makeKpi('Biometrias pendentes',children.filter(x=>!x.biometric_completed).length));
     box.append(kpis);
-    children.forEach(ch=>{const c=node('article',undefined,'activity-card');c.append(node('h3',ch.full_name||'Aluno'),node('p','Turma e faixa: '+(ch.belt||'Não informada')+' • Matrícula: '+fmtDate(ch.enrollment_date),'status-line'));box.append(c);});
+    const photoUrls=await getAuthorizedBiometricPhotoUrls(ids).catch(()=>new Map());
+    const classIds=[...new Set((enrollmentResult.data||[]).map(x=>x.class_id).filter(Boolean))];
+    const classResult=classIds.length?await supabaseClient.from('classes').select('id,name').in('id',classIds):{data:[]};
+    const classNames=new Map((classResult.data||[]).map(x=>[x.id,x.name]));
+    children.forEach(ch=>{
+      const c=node('article',undefined,'activity-card');
+      const header=node('div',undefined,'student-tools');header.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap';
+      const photoUrl=photoUrls.get(ch.id);
+      if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(ch.full_name||'aluno');img.loading='lazy';img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:50%';header.append(img);}
+      const identity=node('div');identity.append(node('h3',ch.full_name||'Aluno'),node('p','Faixa: '+(ch.belt||'Não informada')+' • Turma: '+((enrollmentResult.data||[]).filter(x=>x.student_id===ch.id).map(x=>classNames.get(x.class_id)).filter(Boolean).join(', ')||'Não informada'),'status-line'));header.append(identity);c.append(header);
+      const t=attendanceTotals.get(ch.id)||{present:0,total:0};
+      const evaluation=(evaluationResult.data||[]).find(x=>x.student_id===ch.id);
+      const graduation=(graduationResult.data||[]).find(x=>x.student_id===ch.id);
+      const details=node('p','Matrícula: '+fmtDate(ch.enrollment_date)+' • Frequência: '+(t.total?Math.round(t.present/t.total*100)+'%':'Sem registros')+' • Última avaliação: '+(evaluation?fmtDate(evaluation.evaluated_on):'Sem avaliação')+' • Última graduação: '+(graduation?graduation.belt+' ('+fmtDate(graduation.awarded_on)+')':'Sem registro'),'status-line');
+      c.append(details);
+      const bioBadge=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bioBadge.style.fontWeight='700';bioBadge.style.color=ch.biometric_completed?'#16803c':'#9a6b00';c.append(bioBadge);
+      box.append(c);
+    });
+    const alerts=children.filter(x=>!x.biometric_completed);
+    if(alerts.length){const alertBox=section('Avisos importantes','Pendências que precisam da atenção do responsável.');alerts.forEach(ch=>alertBox.append(node('p','Biometria facial pendente: '+ch.full_name,'status-line')));}
     const activityBox=section('Próximas atividades','Eventos e atividades divulgados pelo Projeto Sementes.');
     const [lectures,actions]=await Promise.all([
       supabaseClient.from('lectures').select('title,topic,scheduled_at,location,status').order('scheduled_at',{ascending:true}).limit(5),
@@ -814,8 +842,17 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   const siteKey='0x4AAAAAAFswPZX9oVKHZCXu';
 
 
+  const guardianPhotoUrls=await getAuthorizedBiometricPhotoUrls(ids).catch(()=>new Map());
+  const guardianClassLinks=await supabaseClient.from('class_enrollments').select('student_id,class_id').in('student_id',ids).eq('active',true);
+  const guardianClassIds=[...new Set((guardianClassLinks.data||[]).map(x=>x.class_id).filter(Boolean))];
+  const guardianClasses=guardianClassIds.length?await supabaseClient.from('classes').select('id,name').in('id',guardianClassIds):{data:[]};
+  const guardianClassNames=new Map((guardianClasses.data||[]).map(x=>[x.id,x.name]));
   children.forEach(child=>{
     const card=node('article',undefined,'dash-panel');
+    const photoUrl=guardianPhotoUrls.get(child.id);
+    if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(child.full_name||'aluno');img.loading='lazy';img.style.cssText='width:104px;height:104px;object-fit:cover;border-radius:50%;display:block;margin:0 0 14px';card.append(img);}
+    const classNames=(guardianClassLinks.data||[]).filter(x=>x.student_id===child.id).map(x=>guardianClassNames.get(x.class_id)).filter(Boolean);
+    if(classNames.length)card.append(node('p','Turma: '+classNames.join(', '),'status-line'));
     card.append(node('h3',child.full_name||'Aluno'));
     const details=node('div',undefined,'kpis');
     details.append(makeKpi('Data de nascimento',child.birth_date||'Não informado'),makeKpi('Data de matrícula',child.enrollment_date||'Não informado'),makeKpi('Faixa',child.belt||'Não informada'));
