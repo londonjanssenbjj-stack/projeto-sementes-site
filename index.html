@@ -363,7 +363,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
   <nav id="mainNav" aria-label="Navegação principal">
    <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#fe-familia">Família</a><a href="#fe-familia">Fé</a><a href="#horarios-aulas">Aulas</a><a href="#galeria">Atividades</a><a href="#parcerias">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
-  <div class="actions"><button class="btn btn-gold" id="openGuardianLogin" type="button" aria-label="Acessar Portal do Responsável" onclick="openModal('guardian');event.stopPropagation()">Portal do Responsável</button><button class="btn btn-outline" id="openTeamLogin" type="button" aria-label="Acessar painel da equipe" onclick="openModal('team');event.stopPropagation()">Acesso da Equipe</button></div>
+  <div class="actions"><button class="btn btn-gold" id="openGuardianLogin" type="button" aria-label="Acessar Portal do Responsável"  >Portal do Responsável</button><button class="btn btn-outline" id="openTeamLogin" type="button" aria-label="Acessar painel da equipe"  >Acesso da Equipe</button></div>
  </div>
 </header>
 <main id="publicSite">
@@ -601,7 +601,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  <div class="footer-bottom"><span>© 2026 Projeto Sementes. Todos os direitos reservados.</span><span>Site institucional · Prévia de redesign</span></div>
 </div></footer>
 
-<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button" onclick="document.getElementById('loginModal').classList.remove('open')">✕</button><h2 id="loginTitle">Acesso da equipe</h2><p id="loginIntro">Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email" id="loginIdentifierLabel">E-mail</label><input id="email" type="text" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form>
+<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="panel"><button class="close" id="closeLogin" aria-label="Fechar janela" type="button"  >✕</button><h2 id="loginTitle">Acesso da equipe</h2><p id="loginIntro">Entre com o e-mail e a senha cadastrados no sistema do projeto.</p><form id="loginForm"><div class="field"><label for="email" id="loginIdentifierLabel">E-mail</label><input id="email" type="text" autocomplete="username" required placeholder="seuemail@exemplo.com"></div><div class="field"><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></div><div class="panel-actions"><button class="btn btn-gold" id="signInBtn" type="submit">Entrar</button><button class="btn" id="resetBtn" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Recuperar senha</button></div></form>
 <div id="guardianRegister" class="guardian-register" aria-live="polite">
  <h3 style="margin:0 0 8px;color:#172131">Criar acesso do responsável</h3>
  <p class="notice">Disponível para matrículas digitais com documento registrado. Informe CIN ou RG, nome e celular exatamente como constam na ficha. Cadastros antigos importados da planilha não possuem documento no banco e precisam de validação presencial pela Secretaria.</p>
@@ -669,18 +669,13 @@ function openModal(mode='team'){
   modal.classList.add('open');message.className='message';
 }
 function closeModal(){modal.classList.remove('open');}
+window.openModal=openModal;
 function showMessage(text,kind){message.textContent=text;message.className='message show '+kind;}
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-document.addEventListener('click',e=>{
-  const trigger=e.target.closest('#openGuardianLogin,#openTeamLogin,#closeLogin');
-  if(trigger){
-    if(trigger.id==='openGuardianLogin')openModal('guardian');
-    else if(trigger.id==='openTeamLogin')openModal('team');
-    else closeModal();
-    return;
-  }
-  if(e.target===modal)closeModal();
-});
+$('openGuardianLogin').addEventListener('click',()=>openModal('guardian'));
+$('openTeamLogin').addEventListener('click',()=>openModal('team'));
+$('closeLogin').addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 function setPrivateMode(on){$('publicHeader').style.display=on?'none':'';$('publicSite').style.display=on?'none':'';$('publicFooter').style.display=on?'none':'';$('dashboard').classList.toggle('show',on);if(on)window.scrollTo(0,0);}
 function niceRole(role){return ({admin:'Administrador',teacher:'Professor',guardian:'Responsável'})[role]||role||'Usuário';}
