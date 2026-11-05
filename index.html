@@ -772,6 +772,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   const idsSet=new Set(ids);
   const fmtDate=value=>value?new Date(value+'T00:00:00').toLocaleDateString('pt-BR'):'—';
   const section=(title,subtitle)=>{const box=node('section',undefined,'dash-panel');box.append(node('h3',title));if(subtitle)box.append(node('p',subtitle,'status-line'));content.append(box);return box;};
+  const biometricActionButton=()=>{const button=node('button','Realizar biometria facial','btn btn-gold small-btn');button.type='button';button.addEventListener('click',()=>renderView('guardian-biometric'));return button;};
   const listRows=(box,headers,rows)=>{
     if(!rows.length){box.append(node('p','Nenhum registro disponível.','status-line'));return;}
     const wrap=node('div',undefined,'table-wrap'),table=node('table');
@@ -804,6 +805,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       details.append(node('p','Nascimento: '+fmtDate(ch.birth_date)+' • Matrícula: '+fmtDate(ch.enrollment_date)),node('p','Turma: '+(classes.join(', ')||'Não informada')),node('p','Frequência registrada: '+(totals.total?Math.round(totals.present/totals.total*100)+'%':'Sem registros')),node('p','Última avaliação: '+(latestEval?fmtDate(latestEval.evaluated_on)+' — '+(latestEval.evaluation||'Registro realizado'):'Sem avaliação registrada')),node('p','Última graduação: '+(latestGrad?(latestGrad.belt||'Faixa não informada')+' • '+fmtDate(latestGrad.awarded_on):'Sem graduação registrada')));
       card.append(details);
       const bio=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bio.style.fontWeight='700';bio.style.color=ch.biometric_completed?'#16803c':'#9a6b00';card.append(bio);
+      if(!ch.biometric_completed)card.append(biometricActionButton());
       appendStudentHealthInfo(card,healthByStudent.get(ch.id),ch);
       box.append(card);
     });
@@ -851,6 +853,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       c.append(details);
       appendStudentHealthInfo(c,healthByStudent.get(ch.id),ch);
       const bioBadge=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bioBadge.style.fontWeight='700';bioBadge.style.color=ch.biometric_completed?'#16803c':'#9a6b00';c.append(bioBadge);
+      if(!ch.biometric_completed)c.append(biometricActionButton());
       const studentActivities=(activityHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
       const studentCompetitions=(competitionHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
       const timeline=[];
@@ -1021,7 +1024,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   const guardianClassIds=[...new Set((guardianClassLinks.data||[]).map(x=>x.class_id).filter(Boolean))];
   const guardianClasses=guardianClassIds.length?await supabaseClient.from('classes').select('id,name').in('id',guardianClassIds):{data:[]};
   const guardianClassNames=new Map((guardianClasses.data||[]).map(x=>[x.id,x.name]));
-  children.forEach(child=>{
+  children.filter(child=>!child.biometric_completed).forEach(child=>{
     const card=node('article',undefined,'dash-panel');
     const photoUrl=guardianPhotoUrls.get(child.id);
     if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(child.full_name||'aluno');img.loading='lazy';img.style.cssText='width:104px;height:104px;object-fit:cover;border-radius:50%;display:block;margin:0 0 14px';card.append(img);}
@@ -1636,7 +1639,7 @@ async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
   if(currentProfile&&currentProfile.role==='guardian'){
-    const allowed=['guardian-overview','guardian-students','guardian-attendance','guardian-evaluation','guardian-graduation','guardian-activities','guardian-documents'];
+    const allowed=['guardian-overview','guardian-students','guardian-biometric','guardian-attendance','guardian-evaluation','guardian-graduation','guardian-activities','guardian-documents'];
     await renderGuardianFamily(content,allowed.includes(view)?view:'guardian-overview');return;
   }
   if(view==='inicio'){await renderOverview(content);return;}
