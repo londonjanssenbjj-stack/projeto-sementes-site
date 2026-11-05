@@ -690,7 +690,7 @@ async function loadDashboard(){
   const guardian=currentProfile.role==='guardian';
   const dashNav=$('dashNav');
   dashNav.replaceChildren();
-  if(guardian){[['guardian-overview','Visão Geral'],['guardian-students','Alunos'],['guardian-attendance','Frequência'],['guardian-evaluation','Avaliação'],['guardian-graduation','Graduação'],['guardian-activities','Atividades']].forEach(([view,label],i)=>{const b=node('button',label,i===0?'active':'');b.type='button';b.dataset.view=view;dashNav.append(b);});dashNav.style.display='';}
+  if(guardian){[['guardian-overview','Visão Geral'],['guardian-students','Alunos'],['guardian-attendance','Frequência'],['guardian-evaluation','Avaliação'],['guardian-graduation','Graduação'],['guardian-activities','Comunicados'],['guardian-documents','Documentos']].forEach(([view,label],i)=>{const b=node('button',label,i===0?'active':'');b.type='button';b.dataset.view=view;dashNav.append(b);});dashNav.style.display='';}
   else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['campeao','Campeão'],['relatorios','Relatórios']].filter(([view])=>view!=='campeao'||currentProfile.role==='admin').forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
     $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
   setPrivateMode(true);
@@ -786,8 +786,8 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     const classResult=classIds.length?await supabaseClient.from('classes').select('id,name').in('id',classIds):{data:[]};
     const classNames=new Map((classResult.data||[]).map(x=>[x.id,x.name]));
     children.forEach(ch=>{
-      const c=node('article',undefined,'activity-card');
-      const header=node('div',undefined,'student-tools');header.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap';
+      const c=node('details',undefined,'activity-card');c.style.cssText='padding:14px';
+      const header=node('summary',undefined,'student-tools');header.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap;cursor:pointer';
       const photoUrl=photoUrls.get(ch.id);
       if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(ch.full_name||'aluno');img.loading='lazy';img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:50%';header.append(img);}
       const identity=node('div');identity.append(node('h3',ch.full_name||'Aluno'),node('p','Faixa: '+(ch.belt||'Não informada')+' • Turma: '+((enrollmentResult.data||[]).filter(x=>x.student_id===ch.id).map(x=>classNames.get(x.class_id)).filter(Boolean).join(', ')||'Não informada'),'status-line'));header.append(identity);c.append(header);
@@ -803,7 +803,9 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       const history=node('div',undefined,'status-line');history.append(node('strong','Histórico de atividades e competições'));
       studentActivities.forEach(x=>{const item=x.lecture_id?(historyLectures.data||[]).find(v=>v.id===x.lecture_id):(historyActions.data||[]).find(v=>v.id===x.social_action_id);if(item)history.append(node('p',(item.title||item.topic||'Atividade')+' • '+fmtDate(x.lecture_id?String(item.scheduled_at||'').slice(0,10):item.action_date)+' • Participou'));});
       studentCompetitions.forEach(x=>{const item=(historyCompetitions.data||[]).find(v=>v.id===x.competition_id);if(item)history.append(node('p',(item.name||'Campeonato')+' • '+fmtDate(item.competition_date)+' • '+(x.placement||x.medal||'Participante')));});
-      if(!studentActivities.length&&!studentCompetitions.length)history.append(node('p','Nenhuma participação ou competição registrada.'));
+      (graduationResult.data||[]).filter(x=>x.student_id===ch.id).forEach(x=>history.append(node('p','Graduação: '+(x.belt||'Faixa não informada')+' • '+fmtDate(x.awarded_on))));
+      (evaluationResult.data||[]).filter(x=>x.student_id===ch.id).forEach(x=>history.append(node('p','Avaliação técnica • '+fmtDate(x.evaluated_on)+' • '+(x.evaluation||'Registro realizado'))));
+      if(!studentActivities.length&&!studentCompetitions.length&&!(graduationResult.data||[]).some(x=>x.student_id===ch.id)&&!(evaluationResult.data||[]).some(x=>x.student_id===ch.id))history.append(node('p','Nenhuma evolução ou participação registrada.'));
       c.append(history);box.append(c);
     });
     const alerts=children.filter(x=>!x.biometric_completed);
@@ -813,7 +815,8 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       supabaseClient.from('lectures').select('title,topic,scheduled_at,location,status').order('scheduled_at',{ascending:true}).limit(5),
       supabaseClient.from('social_actions').select('title,category,action_date,location,status').order('action_date',{ascending:true}).limit(5)
     ]);
-    const upcoming=[...(lectures.data||[]).map(x=>({date:x.scheduled_at,title:x.title||x.topic,place:x.location,type:'Palestra'})),...(actions.data||[]).map(x=>({date:x.action_date,title:x.title,place:x.location,type:'Atividade'}))].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(0,6);
+    const todayKey=new Date().toISOString().slice(0,10);
+    const upcoming=[...(lectures.data||[]).map(x=>({date:String(x.scheduled_at||'').slice(0,10),title:x.title||x.topic,place:x.location,type:'Palestra'})),...(actions.data||[]).map(x=>({date:x.action_date,title:x.title,place:x.location,type:'Atividade'}))].filter(x=>x.date&&x.date>=todayKey).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(0,6);
     listRows(activityBox,['Tipo','Atividade','Data','Local'],upcoming.map(x=>[x.type,x.title,fmtDate(String(x.date||'').slice(0,10)),x.place||'—']));
     return;
   }
@@ -828,6 +831,28 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     const totals=new Map();(rows||[]).forEach(x=>{const t=totals.get(x.student_id)||{present:0,absent:0,excused:0,total:0};t.total++;if(x.status==='present')t.present++;else if(x.status==='absent')t.absent++;else if(x.status==='excused')t.excused++;totals.set(x.student_id,t);});
     listRows(box,['Aluno','Aulas lançadas','Presenças','Faltas','Justificadas','Frequência'],children.map(ch=>{const t=totals.get(ch.id)||{present:0,absent:0,excused:0,total:0};return[ch.full_name,t.total,t.present,t.absent,t.excused,t.total?Math.round(t.present/t.total*100)+'%':'—'];}));
     const orderedRows=(rows||[]).slice().sort((a,b)=>String(lessonMap.get(b.lesson_id)?.lesson_date||'').localeCompare(String(lessonMap.get(a.lesson_id)?.lesson_date||''))).slice(0,100);
+    const nowCalendar=new Date(),calendarYear=nowCalendar.getFullYear(),calendarMonth=nowCalendar.getMonth();
+    const calendarBox=section('Calendário mensal de frequência','Acompanhe as chamadas registradas no mês atual.');
+    const legend=node('p','Legenda: Presente • Falta • Justificada • Sem chamada registrada','status-line');calendarBox.append(legend);
+    children.forEach(ch=>{
+      const studentRows=orderedRows.filter(x=>x.student_id===ch.id);
+      const monthCard=node('article',undefined,'activity-card');monthCard.append(node('h3',ch.full_name||'Aluno'));
+      const monthTitle=node('p',new Date(calendarYear,calendarMonth,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),'status-line');monthTitle.style.fontWeight='700';monthCard.append(monthTitle);
+      const grid=node('div');grid.style.cssText='display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center';
+      ['D','S','T','Q','Q','S','S'].forEach(d=>{const cell=node('div',d,'status-line');cell.style.fontWeight='800';grid.append(cell);});
+      const firstDay=new Date(calendarYear,calendarMonth,1).getDay(),daysInMonth=new Date(calendarYear,calendarMonth+1,0).getDate();
+      for(let pad=0;pad<firstDay;pad++){const blank=node('div','');grid.append(blank);}
+      for(let day=1;day<=daysInMonth;day++){
+        const dateKey=calendarYear+'-'+String(calendarMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+        const marks=studentRows.filter(x=>String(lessonMap.get(x.lesson_id)?.lesson_date||'').slice(0,10)===dateKey);
+        const cell=node('div',String(day));
+        const status=marks.some(x=>x.status==='present')?'present':marks.some(x=>x.status==='absent')?'absent':marks.some(x=>x.status==='excused')?'excused':'none';
+        const colors={present:['#e7f5eb','#176b35'],absent:['#fdecec','#a12626'],excused:['#fff5d8','#8a6200'],none:['#f2f3f5','#657080']};
+        cell.style.cssText='padding:7px 2px;border-radius:5px;background:'+colors[status][0]+';color:'+colors[status][1]+';font-size:12px;font-weight:700;min-height:32px';
+        cell.title=marks.length?marks.map(x=>({present:'Presente',absent:'Falta',excused:'Justificada'}[x.status]||x.status).join(', '):'Sem chamada registrada';grid.append(cell);
+      }
+      monthCard.append(grid);calendarBox.append(monthCard);
+    });
     children.forEach(ch=>{
       const studentRows=orderedRows.filter(x=>x.student_id===ch.id);
       const studentBox=node('article',undefined,'activity-card');
@@ -841,6 +866,24 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       }
       box.append(studentBox);
     });
+    return;
+  }
+  if(view==='guardian-documents'){
+    const box=section('Documentos e autorizações','Consulta dos documentos de matrícula disponibilizados para os alunos vinculados à sua conta.');
+    const {data:submissions,error}=await supabaseClient.from('enrollment_submissions').select('student_id,protocol,signed_at,pdf_storage_path,signature_storage_path').in('student_id',ids).order('created_at',{ascending:false}).limit(100);
+    if(error){box.append(node('p','Não foi possível consultar os documentos autorizados. A Secretaria pode verificar a disponibilidade.','status-line'));return;}
+    const latestByStudent=new Map();(submissions||[]).forEach(x=>{if(!latestByStudent.has(x.student_id))latestByStudent.set(x.student_id,x);});
+    for(const child of children){
+      const doc=latestByStudent.get(child.id),card=node('article',undefined,'activity-card');card.append(node('h3',child.full_name||'Aluno'));
+      if(!doc){card.append(node('p','Nenhum documento de matrícula disponível para consulta.','status-line'));box.append(card);continue;}
+      card.append(node('p','Protocolo: '+(doc.protocol||'Não informado'),'status-line'),node('p','Assinatura: '+(doc.signed_at?fmtDate(String(doc.signed_at).slice(0,10)):'Não consta assinatura registrada'),'status-line'));
+      if(doc.pdf_storage_path){
+        const {data:file,error:fileError}=await supabaseClient.storage.from('matriculas-assinadas').createSignedUrl(doc.pdf_storage_path,120);
+        if(!fileError&&file?.signedUrl){const link=node('a','Abrir ficha de matrícula (PDF)','btn btn-gold small-btn');link.href=file.signedUrl;link.target='_blank';link.rel='noopener noreferrer';card.append(link);}
+        else card.append(node('p','O PDF está cadastrado, mas não foi possível gerar o acesso temporário. Solicite à Secretaria.','status-line'));
+      }else card.append(node('p','Não há PDF anexado a este protocolo.','status-line'));
+      box.append(card);
+    }
     return;
   }
   if(view==='guardian-evaluation'){
@@ -1516,7 +1559,7 @@ async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
   if(currentProfile&&currentProfile.role==='guardian'){
-    const allowed=['guardian-overview','guardian-students','guardian-attendance','guardian-evaluation','guardian-graduation','guardian-activities'];
+    const allowed=['guardian-overview','guardian-students','guardian-attendance','guardian-evaluation','guardian-graduation','guardian-activities','guardian-documents'];
     await renderGuardianFamily(content,allowed.includes(view)?view:'guardian-overview');return;
   }
   if(view==='inicio'){await renderOverview(content);return;}
