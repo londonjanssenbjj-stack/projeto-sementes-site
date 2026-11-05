@@ -701,6 +701,29 @@ async function loadDashboard(){
   await renderView(guardian?'guardian-overview':'inicio');
 }
 function makeKpi(label,value){const box=node('div',undefined,'kpi');box.append(node('strong',String(value)),node('span',label));return box;}
+function appendStudentHealthInfo(container,record,student){
+  const box=node('section',undefined,'status-line');
+  box.style.cssText='margin-top:12px;padding:14px;border:1px solid #e4e0d6;border-left:3px solid #d9b64b;border-radius:6px;background:#fff';
+  box.append(node('strong','Histórico de saúde e cuidados'));
+  const raw=record?.care_instructions;
+  let answers={};
+  if(raw){try{answers=typeof raw==='string'?JSON.parse(raw):raw;}catch(_){answers={observacoes:raw};}}
+  const labels={cardiaco_pressao:'Problema cardíaco / pressão',cardiaco:'Problema cardíaco',pressao:'Pressão',asma_respiratorio:'Asma / problema respiratório',asma:'Asma',respiratorio:'Problema respiratório',lesao_musculoesqueletica:'Lesão óssea, muscular ou articular',lesao:'Lesão',medicamento_continuo:'Uso contínuo de medicamento',medicamento:'Medicamento',medicamentos:'Medicamentos',alergia:'Alergia',alergias:'Alergias',desmaio_tontura:'Desmaio / tontura durante exercício',desmaio:'Desmaio',tontura:'Tontura',detalhes:'Detalhes',descricao:'Descrição',alergias_descricao:'Descrição das alergias',outras_condicoes:'Outras condições',observacoes:'Observações',practice_restrictions:'Restrições para prática',restrictions:'Restrições',restricoes:'Restrições'};
+  const shown=new Set();
+  Object.entries(answers||{}).forEach(([key,value])=>{
+    if(value===null||value===undefined||String(value).trim()===''||key==='emergency_contact')return;
+    const label=labels[key]||key.replace(/_/g,' ').replace(/^./,x=>x.toUpperCase());
+    box.append(node('p',label+': '+String(value),'status-line'));shown.add(key);
+  });
+  if(record?.relevant_allergies&&!['alergia','alergias','allergies'].some(k=>shown.has(k)))box.append(node('p','Alergias: '+record.relevant_allergies,'status-line'));
+  if(record?.practice_restrictions&&!['practice_restrictions','restrictions','restricoes'].some(k=>shown.has(k)))box.append(node('p','Restrições para prática: '+record.practice_restrictions,'status-line'));
+  if(!record&&!Object.keys(answers).length)box.append(node('p','Histórico de saúde ainda não informado no sistema.','status-line'));
+  box.append(node('strong','Contato de emergência'));
+  const emergencyName=record?.emergency_contact_name||student?.emergency_contact_name||student?.guardian_name||'Não informado';
+  const emergencyPhone=record?.emergency_contact_phone||student?.emergency_contact_phone||student?.guardian_phone||'Não informado';
+  box.append(node('p','Nome: '+emergencyName,'status-line'),node('p','Telefone: '+emergencyPhone,'status-line'));
+  container.append(box);
+}
 async function renderGuardianFamily(content,view='guardian-overview'){
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Acompanhamento familiar'),node('p','Aqui aparecem somente os alunos vinculados e autorizados para esta conta.'));
@@ -714,10 +737,13 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   if(!links||!links.length){panel.append(node('p','Sua conta ainda não possui um aluno vinculado e confirmado. Solicite à Secretaria a conferência do cadastro.','status-line'));return;}
   const ids=[...new Set(links.map(x=>x.student_id).filter(Boolean))];
   const {data:children,error:childrenError}=await supabaseClient.from('students')
-    .select('id,full_name,birth_date,enrollment_date,belt,biometric_completed').in('id',ids);
+    .select('id,full_name,birth_date,enrollment_date,belt,biometric_completed,guardian_name,guardian_phone,emergency_contact_name,emergency_contact_phone').in('id',ids);
   if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
   if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
 
+  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
+  if(healthError)console.warn('Histórico de saúde indisponível para esta conta:',healthError.message);
+  const healthByStudent=new Map((healthRecords||[]).map(x=>[x.student_id,x]));
   const familyTitle=node('h2','Acompanhamento familiar');
   panel.replaceChildren(familyTitle,node('p','Aqui aparecem somente os alunos vinculados e autorizados para esta conta.'));
   const idsSet=new Set(ids);
@@ -768,6 +794,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       const graduation=(graduationResult.data||[]).find(x=>x.student_id===ch.id);
       const details=node('p','Matrícula: '+fmtDate(ch.enrollment_date)+' • Frequência: '+(t.total?Math.round(t.present/t.total*100)+'%':'Sem registros')+' • Última avaliação: '+(evaluation?fmtDate(evaluation.evaluated_on):'Sem avaliação')+' • Última graduação: '+(graduation?graduation.belt+' ('+fmtDate(graduation.awarded_on)+')':'Sem registro'),'status-line');
       c.append(details);
+      appendStudentHealthInfo(c,healthByStudent.get(ch.id),ch);
       const bioBadge=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bioBadge.style.fontWeight='700';bioBadge.style.color=ch.biometric_completed?'#16803c':'#9a6b00';c.append(bioBadge);
       const studentActivities=(activityHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
       const studentCompetitions=(competitionHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
@@ -1816,7 +1843,7 @@ async function renderStudents(content){
 }
 
 const studentModal=$('studentModal'),studentMessage=$('studentMessage'),studentForm=$('studentForm');
-const studentFields=['full_name','birth_date','enrollment_date','belt','registration_status','biometric_completed','guardian_name','guardian_phone','address','neighborhood','school','admin_review_note'];
+const studentFields=['full_name','birth_date','enrollment_date','belt','registration_status','biometric_completed','guardian_name','guardian_phone','emergency_contact_name','emergency_contact_phone','address','neighborhood','school','admin_review_note'];
 function setStudentMessage(text,kind){studentMessage.textContent=text;studentMessage.className='message show '+kind;}
 function setStudentReadOnly(readOnly){studentFields.forEach(k=>{const el=$('st_'+k);if(el)el.disabled=readOnly;});$('saveStudentBtn').style.display=readOnly?'none':'';}
 function openStudentModal(){studentModal.classList.add('open');}
@@ -1825,11 +1852,14 @@ $('closeStudentModal').addEventListener('click',closeStudentModal);$('cancelStud
 async function openStudentFicha(id){
   studentForm.reset();studentMessage.className='message';$('studentId').value=id;$('studentModalTitle').textContent='Ficha do aluno';$('studentDetailMeta').textContent='Carregando dados autorizados…';setStudentReadOnly(true);openStudentModal();
   try{
-    const {data,error}=await supabaseClient.from('students').select('id,source_row_number,full_name,enrollment_date,belt,birth_date,guardian_name,guardian_phone,address,neighborhood,school,registration_status,biometric_completed,admin_review_note,updated_at').eq('id',id).single();
+    const {data,error}=await supabaseClient.from('students').select('id,source_row_number,full_name,enrollment_date,belt,birth_date,guardian_name,guardian_phone,emergency_contact_name,emergency_contact_phone,address,neighborhood,school,registration_status,biometric_completed,admin_review_note,updated_at').eq('id',id).single();
     if(error)throw error;
     studentFields.forEach(k=>{const el=$('st_'+k);if(el)el.value=k==='biometric_completed'?String(!!data[k]):(data[k]??'');});
     $('studentDetailMeta').textContent='Registro nº '+(data.source_row_number??'—')+' • Última atualização: '+(data.updated_at?new Date(data.updated_at).toLocaleString('pt-BR'):'não informada');
     const historyBox=$('studentHistory');historyBox.replaceChildren(node('h3','Histórico técnico e de graduação'));
+    const {data:healthRecord,error:healthRecordError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').eq('student_id',id).maybeSingle();
+    if(healthRecordError)throw healthRecordError;
+    appendStudentHealthInfo(historyBox,healthRecord,data);
     try{
       const [evaluations,graduations]=await Promise.all([
         supabaseClient.from('technical_evaluations').select('evaluated_on,evaluation').eq('student_id',id).order('evaluated_on',{ascending:false}).limit(50),
@@ -1852,7 +1882,7 @@ studentForm.addEventListener('submit',async e=>{
   if(!payload.full_name){setStudentMessage('Informe o nome completo do aluno.','error');return;}
   const save=$('saveStudentBtn');save.disabled=true;save.textContent='Salvando…';
   try{
-    const selectedFields='id,source_row_number,full_name,enrollment_date,belt,birth_date,guardian_name,guardian_phone,address,neighborhood,school,registration_status,admin_review_note,updated_at';
+    const selectedFields='id,source_row_number,full_name,enrollment_date,belt,birth_date,guardian_name,guardian_phone,emergency_contact_name,emergency_contact_phone,address,neighborhood,school,registration_status,admin_review_note,updated_at';
     const {data:updated,error:updateError}=await supabaseClient
       .from('students')
       .update(payload)
@@ -1871,7 +1901,7 @@ studentForm.addEventListener('submit',async e=>{
     if(verifyError)throw new Error('A atualização foi enviada, mas não foi possível confirmar a leitura posterior: '+verifyError.message);
     if(!verified)throw new Error('A atualização foi enviada, mas o registro não pôde ser relido. Confira as políticas SELECT da tabela students.');
 
-    const fieldsToVerify=['full_name','birth_date','enrollment_date','belt','registration_status','guardian_name','guardian_phone','address','neighborhood','school','admin_review_note'];
+    const fieldsToVerify=['full_name','birth_date','enrollment_date','belt','registration_status','guardian_name','guardian_phone','emergency_contact_name','emergency_contact_phone','address','neighborhood','school','admin_review_note'];
     const mismatch=fieldsToVerify.find(k=>(verified[k]??'')!==(payload[k]??''));
     if(mismatch)throw new Error('O banco retornou um valor diferente no campo "'+mismatch+'". O sistema não confirmou a gravação completa; recarregue a ficha antes de tentar novamente.');
 
