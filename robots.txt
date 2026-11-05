@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://londonjanssenbjj-stack.github.io/projeto-sementes-site/sitemap.xml
