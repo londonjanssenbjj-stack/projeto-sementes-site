@@ -623,7 +623,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 
 <section id="dashboard"><div class="wrap"><div class="dash-head"><div><div class="eyebrow">Área restrita</div><h1>Painel de Gestão — Projeto Sementes</h1><p id="profileInfo">Sessão autenticada</p></div><button class="btn btn-outline" id="logoutBtn" type="button">Sair com segurança</button></div><div class="dash-nav" id="dashNav"><button class="active" data-view="inicio" type="button">Visão geral</button><button data-view="alunos" type="button">Alunos</button><button data-view="chamada" type="button">Turmas e chamada</button><button data-view="historico" type="button">Frequência</button><button data-view="tecnica" type="button">Avaliação e graduação</button><button data-view="atividades" type="button">Atividades</button><button data-view="relatorios" type="button">Relatórios</button></div>
 <div id="passwordChangeGate" class="dash-panel" style="display:none;margin:18px 0"><h2>Defina sua senha pessoal</h2><p>Por segurança, substitua a senha temporária antes de acessar os dados dos alunos.</p><form id="passwordChangeForm"><div class="field"><label for="guardianNewPassword">Nova senha (mínimo 10 caracteres)</label><input id="guardianNewPassword" type="password" minlength="10" autocomplete="new-password" required></div><div class="field"><label for="guardianConfirmPassword">Confirme a nova senha</label><input id="guardianConfirmPassword" type="password" minlength="10" autocomplete="new-password" required></div><button class="btn btn-gold" id="saveGuardianPasswordBtn" type="submit">Salvar minha senha</button><div id="passwordChangeMessage" class="message" role="status"></div></form></div>
-<div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. Informações de saúde não são consultadas por esta página.</p></div></section>
+<div id="dashContent"></div><p class="notice">Dados carregados do Supabase conforme as permissões do usuário. As informações de saúde são exibidas conforme as permissões da conta.</p></div></section>
 
 
 <div class="modal" id="studentModal" role="dialog" aria-modal="true" aria-labelledby="studentModalTitle"><div class="panel" style="width:min(760px,100%)"><button class="close" id="closeStudentModal" aria-label="Fechar ficha" type="button">✕</button><h2 id="studentModalTitle">Ficha do aluno</h2><div class="detail-meta" id="studentDetailMeta">Carregando dados autorizados…</div><form id="studentForm"><input type="hidden" id="studentId"><div class="student-detail-grid">
@@ -723,7 +723,19 @@ function appendStudentHealthInfo(container,record,student){
   });
   if(record?.relevant_allergies&&!['alergia','alergias','allergies'].some(k=>shown.has(k)))box.append(node('p','Alergias: '+record.relevant_allergies,'status-line'));
   if(record?.practice_restrictions&&!['practice_restrictions','restrictions','restricoes'].some(k=>shown.has(k)))box.append(node('p','Restrições para prática: '+record.practice_restrictions,'status-line'));
-  if(!record&&!Object.keys(answers).length)box.append(node('p','Histórico de saúde ainda não informado no sistema.','status-line'));
+  const hiddenFields=new Set(['student_id','id','created_at','updated_at','guardian_confirmed_at','emergency_contact_name','emergency_contact_phone','health_history','relevant_allergies','practice_restrictions','care_instructions']);
+  if(record){
+    Object.entries(record).forEach(([key,value])=>{
+      if(hiddenFields.has(key)||value===null||value===undefined||String(value).trim()==='')return;
+      if(shown.has(key))return;
+      const label=labels[key]||key.replace(/_/g,' ').replace(/^./,x=>x.toUpperCase());
+      const display=typeof value==='object'?JSON.stringify(value):String(value);
+      box.append(node('p',label+': '+display,'status-line'));shown.add(key);
+    });
+    if(!shown.size)box.append(node('p','O cadastro foi localizado, mas não há informações de saúde preenchidas nos campos disponíveis.','status-line'));
+  }else{
+    box.append(node('p','Histórico de saúde ainda não informado no sistema.','status-line'));
+  }
   box.append(node('strong','Contato de emergência'));
   const emergencyName=record?.emergency_contact_name||student?.emergency_contact_name||student?.guardian_name||'Não informado';
   const emergencyPhone=record?.emergency_contact_phone||student?.emergency_contact_phone||student?.guardian_phone||'Não informado';
@@ -747,11 +759,12 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
   if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
 
-  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,health_history,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
+  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('*').in('student_id',ids);
   if(healthError)console.warn('Histórico de saúde indisponível para esta conta:',healthError.message);
   const healthByStudent=new Map((healthRecords||[]).map(x=>[x.student_id,x]));
   const familyTitle=node('h2','Acompanhamento familiar');
   panel.replaceChildren(familyTitle,node('p','Aqui aparecem somente os alunos vinculados e autorizados para esta conta.'));
+  if(healthError)panel.append(node('p','Não foi possível consultar o histórico de saúde desta conta: '+healthError.message,'status-line error'));
   const idsSet=new Set(ids);
   const fmtDate=value=>value?new Date(value+'T00:00:00').toLocaleDateString('pt-BR'):'—';
   const section=(title,subtitle)=>{const box=node('section',undefined,'dash-panel');box.append(node('h3',title));if(subtitle)box.append(node('p',subtitle,'status-line'));content.append(box);return box;};
