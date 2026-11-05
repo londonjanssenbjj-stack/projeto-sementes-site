@@ -739,6 +739,14 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       supabaseClient.from('activity_participations').select('student_id,lecture_id,social_action_id,participated,notes').in('student_id',ids).eq('participated',true),
       supabaseClient.from('competition_participants').select('student_id,competition_id,placement,medal,division').in('student_id',ids)
     ]);
+    const lectureIds=[...new Set((activityHistoryResult.data||[]).map(x=>x.lecture_id).filter(Boolean))];
+    const socialIds=[...new Set((activityHistoryResult.data||[]).map(x=>x.social_action_id).filter(Boolean))];
+    const competitionIds=[...new Set((competitionHistoryResult.data||[]).map(x=>x.competition_id).filter(Boolean))];
+    const [historyLectures,historyActions,historyCompetitions]=await Promise.all([
+      lectureIds.length?supabaseClient.from('lectures').select('id,title,topic,scheduled_at').in('id',lectureIds):{data:[]},
+      socialIds.length?supabaseClient.from('social_actions').select('id,title,action_date').in('id',socialIds):{data:[]},
+      competitionIds.length?supabaseClient.from('competitions').select('id,name,competition_date').in('id',competitionIds):{data:[]}
+    ]);
     const attendanceTotals=new Map();
     (attendanceResult.data||[]).forEach(x=>{const t=attendanceTotals.get(x.student_id)||{present:0,total:0};t.total++;if(x.status==='present')t.present++;attendanceTotals.set(x.student_id,t);});
     const avgFrequency=children.length?Math.round(children.reduce((sum,ch)=>{const t=attendanceTotals.get(ch.id);return sum+(t&&t.total?t.present/t.total*100:0);},0)/children.length):0;
@@ -763,8 +771,11 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       const bioBadge=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bioBadge.style.fontWeight='700';bioBadge.style.color=ch.biometric_completed?'#16803c':'#9a6b00';c.append(bioBadge);
       const studentActivities=(activityHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
       const studentCompetitions=(competitionHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
-      c.append(node('p','Atividades registradas: '+studentActivities.length+' • Competições: '+studentCompetitions.length,'status-line'));
-      box.append(c);
+      const history=node('div',undefined,'status-line');history.append(node('strong','Histórico de atividades e competições'));
+      studentActivities.forEach(x=>{const item=x.lecture_id?(historyLectures.data||[]).find(v=>v.id===x.lecture_id):(historyActions.data||[]).find(v=>v.id===x.social_action_id);if(item)history.append(node('p',(item.title||item.topic||'Atividade')+' • '+fmtDate(x.lecture_id?String(item.scheduled_at||'').slice(0,10):item.action_date)+' • Participou'));});
+      studentCompetitions.forEach(x=>{const item=(historyCompetitions.data||[]).find(v=>v.id===x.competition_id);if(item)history.append(node('p',(item.name||'Campeonato')+' • '+fmtDate(item.competition_date)+' • '+(x.placement||x.medal||'Participante')));});
+      if(!studentActivities.length&&!studentCompetitions.length)history.append(node('p','Nenhuma participação ou competição registrada.'));
+      c.append(history);box.append(c);
     });
     const alerts=children.filter(x=>!x.biometric_completed);
     if(alerts.length){const alertBox=section('Avisos importantes','Pendências que precisam da atenção do responsável.');alerts.forEach(ch=>alertBox.append(node('p','Biometria facial pendente: '+ch.full_name,'status-line')));}
@@ -822,8 +833,8 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   if(view==='guardian-activities'){
     const box=section('Atividades do projeto','Palestras, treinamentos, ações sociais e eventos.');
     const [lectures,actions]=await Promise.all([
-      supabaseClient.from('lectures').select('title,topic,scheduled_at,location,speaker,status').order('scheduled_at',{ascending:false}).limit(100),
-      supabaseClient.from('social_actions').select('title,category,action_date,location,status,description').order('action_date',{ascending:false}).limit(100)
+      supabaseClient.from('lectures').select('id,title,topic,scheduled_at,location,speaker,status').order('scheduled_at',{ascending:false}).limit(100),
+      supabaseClient.from('social_actions').select('id,title,category,action_date,location,status,description').order('action_date',{ascending:false}).limit(100)
     ]);
     if(lectures.error)box.append(node('p','Palestras: '+lectures.error.message,'status-line error'));
     if(actions.error)box.append(node('p','Atividades: '+actions.error.message,'status-line error'));
