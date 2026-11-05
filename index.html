@@ -820,6 +820,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     const classIds=[...new Set((enrollmentResult.data||[]).map(x=>x.class_id).filter(Boolean))];
     const classResult=classIds.length?await supabaseClient.from('classes').select('id,name').in('id',classIds):{data:[]};
     const classNames=new Map((classResult.data||[]).map(x=>[x.id,x.name]));
+    box.append(node('h3','Perfis individuais dos alunos'),node('p','Clique em cada cartão para abrir o acompanhamento individual, com frequência, saúde, emergência e histórico de evolução.','status-line'));
     children.forEach(ch=>{
       const c=node('details',undefined,'activity-card');c.style.cssText='padding:14px';
       const header=node('summary',undefined,'student-tools');header.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap;cursor:pointer';
