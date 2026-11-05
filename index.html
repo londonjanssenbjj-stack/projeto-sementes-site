@@ -690,7 +690,7 @@ async function loadDashboard(){
   const dashNav=$('dashNav');
   dashNav.replaceChildren();
   if(guardian){[['guardian-overview','Visão Geral'],['guardian-students','Alunos'],['guardian-attendance','Frequência'],['guardian-evaluation','Avaliação'],['guardian-graduation','Graduação'],['guardian-activities','Atividades']].forEach(([view,label],i)=>{const b=node('button',label,i===0?'active':'');b.type='button';b.dataset.view=view;dashNav.append(b);});dashNav.style.display='';}
-  else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['campeao','Campeão'],['relatorios','Relatórios']].forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
+  else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['campeao','Campeão'],['relatorios','Relatórios']].filter(([view])=>view!=='campeao'||currentProfile.role==='admin').forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
     $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
   setPrivateMode(true);
   if(guardian && user.user_metadata?.must_change_password===true){
