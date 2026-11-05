@@ -1637,8 +1637,13 @@ async function renderActivities(content){
               const activityKey={lecture_id:null,social_action_id:null};activityKey[table]=item.id;
               const chosen=checks.filter(x=>x.check.checked).map(x=>x.id);
               const existing=(participationResult.data||[]).filter(x=>(item._table==='lecture'?x.lecture_id===item.id:x.social_action_id===item.id));
-              const payload=chosen.map(student_id=>({student_id,...activityKey,participated:true,recorded_by:currentProfile.id}));
-              if(payload.length){const {error}=await supabaseClient.from('activity_participations').upsert(payload,{onConflict:item._table==='lecture'?'student_id,lecture_id':'student_id,social_action_id'});if(error)throw error;}
+              for(const student_id of chosen){
+                const prior=existing.find(x=>x.student_id===student_id);
+                const result=prior
+                  ?await supabaseClient.from('activity_participations').update({participated:true,recorded_by:currentProfile.id}).eq('id',prior.id)
+                  :await supabaseClient.from('activity_participations').insert({student_id,...activityKey,participated:true,recorded_by:currentProfile.id});
+                if(result.error)throw result.error;
+              }
               const unselected=existing.filter(x=>!chosen.includes(x.student_id)).map(x=>x.student_id);
               if(unselected.length){let query=supabaseClient.from('activity_participations').update({participated:false}).in('student_id',unselected);query=item._table==='lecture'?query.eq('lecture_id',item.id):query.eq('social_action_id',item.id);const {error}=await query;if(error)throw error;}
               rosterMsg.textContent='Participações salvas no histórico dos alunos.';rosterMsg.className='status-line success';await loadActivities();
@@ -1735,9 +1740,9 @@ async function renderChampions(content){
         const notes=node('input',undefined,'search');notes.placeholder='Observações';notes.maxLength=300;
         const add=node('button','Registrar participante','btn btn-gold small-btn');add.type='submit';
         const msg=node('p','','status-line');[student,division,belt,weight,modality,placement,medal,notes,add,msg].forEach(x=>form.append(x));card.append(form);
-        add.addEventListener('click',async e=>{
-          e.preventDefault();if(!student.value)return;add.disabled=true;
-          try{const {error}=await supabaseClient.from('competition_participants').upsert({competition_id:event.id,student_id:student.value,division:division.value.trim()||null,belt:belt.value.trim()||null,weight_category:weight.value.trim()||null,modality:modality.value||null,placement:placement.value.trim()||null,medal:medal.value||null,notes:notes.value.trim()||null},{onConflict:'competition_id,student_id'});if(error)throw error;msg.textContent='Participante registrado.';msg.className='status-line success';await load();}
+        form.addEventListener('submit',async e=>{
+          e.preventDefault();if(!student.value){msg.textContent='Selecione um aluno.';msg.className='status-line error';return;}add.disabled=true;
+          try{const payload={competition_id:event.id,student_id:student.value,division:division.value.trim()||null,belt:belt.value.trim()||null,weight_category:weight.value.trim()||null,modality:modality.value||null,placement:placement.value.trim()||null,medal:medal.value||null,notes:notes.value.trim()||null};const {error}=await supabaseClient.from('competition_participants').upsert(payload,{onConflict:'competition_id,student_id'});if(error)throw error;msg.textContent='Participante registrado no histórico do campeonato e do aluno.';msg.className='status-line success';await load();}
           catch(err){msg.textContent='Erro: '+(err.message||String(err));msg.className='status-line error';}finally{add.disabled=false;}
         });
       }
