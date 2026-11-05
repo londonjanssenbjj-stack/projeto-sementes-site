@@ -632,6 +632,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
 <div class="field"><label for="st_belt">Faixa</label><select id="st_belt"><option value="">Não informada</option><option>Branca</option><option>Cinza</option><option>Amarela</option><option>Laranja</option><option>Verde</option><option>Azul</option><option>Roxa</option><option>Marrom</option><option>Preta</option></select></div>
 <div class="field"><label for="st_registration_status">Situação cadastral</label><select id="st_registration_status"><option value="pre_registration_pending">Pré-cadastro pendente</option><option value="awaiting_guardian">Aguardando responsável</option><option value="submitted_for_review">Enviado para revisão</option><option value="needs_correction">Precisa de correção</option><option value="complete">Completo</option><option value="inactive">Inativo</option></select></div><div class="field"><label for="st_biometric_completed">Biometria facial</label><select id="st_biometric_completed"><option value="false">Pendente</option><option value="true">Concluída</option></select></div>
 <div class="field"><label for="st_guardian_name">Nome do responsável</label><input id="st_guardian_name" maxlength="180"></div><div class="field"><label for="st_guardian_phone">Telefone do responsável</label><input id="st_guardian_phone" type="tel" maxlength="40"></div>
+<div class="field"><label for="st_emergency_contact_name">Nome do contato de emergência</label><input id="st_emergency_contact_name" maxlength="180"></div><div class="field"><label for="st_emergency_contact_phone">Telefone do contato de emergência</label><input id="st_emergency_contact_phone" type="tel" maxlength="40"></div>
 <div class="field full"><label for="st_address">Endereço</label><input id="st_address" maxlength="250"></div><div class="field"><label for="st_neighborhood">Bairro</label><input id="st_neighborhood" maxlength="120"></div><div class="field"><label for="st_school">Escola</label><input id="st_school" maxlength="180"></div>
 <div class="field full"><label for="st_admin_review_note">Observação administrativa</label><textarea id="st_admin_review_note" maxlength="1500"></textarea></div></div><div class="message" id="studentMessage" role="status"></div><div class="modal-actions"><button class="btn" id="cancelStudentEdit" type="button" style="background:#f3f4f6;border-color:#d0d5dd;color:#344054">Fechar</button><button class="btn btn-gold" id="saveStudentBtn" type="submit">Salvar alterações</button></div></form><div id="studentHistory" class="student-history"><h3>Histórico técnico e de graduação</h3><p class="status-line">Abra uma ficha para consultar o histórico.</p></div><div class="notice">A ficha não consulta nem altera dados de saúde. A gravação depende das políticas RLS e das permissões administrativas do Supabase.</div></div></div>
 
@@ -1002,6 +1003,9 @@ async function renderClassAttendance(content){
       const ids=[...new Set((enrollments||[]).map(x=>x.student_id).filter(Boolean))];
       if(!ids.length){status.textContent='Esta turma ainda não possui alunos ativos.';return;}
       const {data:students,error:studentsError}=await supabaseClient.from('students').select('id,full_name,belt,biometric_completed').in('id',ids).order('full_name');
+      const {data:healthRows,error:healthRowsError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
+      if(healthRowsError)throw healthRowsError;
+      const healthByStudent=new Map((healthRows||[]).map(x=>[x.student_id,x]));
       if(studentsError)throw studentsError;
       let attendancePhotoUrls=new Map();
       try{attendancePhotoUrls=await getAuthorizedBiometricPhotoUrls((students||[]).map(st=>st.id));}
@@ -1085,6 +1089,7 @@ async function renderClassAttendance(content){
         const identity=node('div',undefined,'attendance-identity');
         identity.append(node('strong',st.full_name||'Aluno'),node('span','Faixa: '+(st.belt||'Não informada')));
         const top=node('div',undefined,'attendance-student-top');top.append(avatar,identity);
+        appendStudentHealthInfo(card,healthByStudent.get(st.id),st);
         const old=existingMap.get(st.id);
         const actions=node('div',undefined,'attendance-status-actions');
         const item={student_id:st.id,name:st.full_name||'Aluno',status:old?old.status:'',buttons:[]};
