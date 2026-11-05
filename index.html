@@ -789,7 +789,7 @@ async function renderGuardianFamily(content){
           });
           const result=await response.json().catch(()=>({}));
           if(!response.ok)throw new Error(result.error||'O servidor não confirmou o armazenamento da foto.');
-          stopCamera();bioStatus.textContent='Captura concluída. A foto foi armazenada com segurança.';bioStatus.className='status-line success';
+          stopCamera();bioStatus.textContent='Captura concluída. A foto foi armazenada com segurança.';bioStatus.className='status-line success';setTimeout(()=>window.location.reload(),1200);
           consent.disabled=true;camera.disabled=true;capture.style.display='none';cancel.style.display='none';
         }catch(err){bioStatus.textContent=err.message||'Falha ao enviar a foto.';bioStatus.className='status-line error';capture.disabled=false;if(window.turnstile&&widgetId!==null)window.turnstile.reset(widgetId);}
       });
@@ -908,7 +908,7 @@ async function renderClassAttendance(content){
         const initials=String(st.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
         const avatar=node('div',initials||'AL','attendance-avatar');avatar.style.position='relative';avatar.style.overflow='hidden';avatar.setAttribute('aria-label',attendancePhotoUrls.has(st.id)?'Fotografia biométrica do aluno':'Foto não cadastrada; iniciais do aluno');
         const attendancePhotoUrl=attendancePhotoUrls.get(st.id);
-        if(attendancePhotoUrl&&st.biometric_completed){const photo=node('img');photo.src=attendancePhotoUrl;photo.alt='Foto biométrica de '+(st.full_name||'aluno');photo.loading='lazy';photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';photo.onerror=()=>photo.remove();avatar.append(photo);}
+        if(attendancePhotoUrl){const photo=node('img');photo.src=attendancePhotoUrl;photo.alt='Foto biométrica de '+(st.full_name||'aluno');photo.loading='lazy';photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';photo.onerror=()=>photo.remove();avatar.append(photo);}
         const identity=node('div',undefined,'attendance-identity');
         identity.append(node('strong',st.full_name||'Aluno'),node('span','Faixa: '+(st.belt||'Não informada')));
         const top=node('div',undefined,'attendance-student-top');top.append(avatar,identity);
@@ -1287,7 +1287,7 @@ async function renderTechnicalProgress(content){
         const selectedStudent=(students||[]).find(st=>st.id===studentSelect.value);
         if(!selectedStudent)return;
         const photoUrl=technicalPhotoUrls.get(selectedStudent.id);
-        if(photoUrl&&selectedStudent.biometric_completed){const photo=node('img');photo.src=photoUrl;photo.alt='Foto biométrica de '+selectedStudent.full_name;photo.loading='lazy';photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';photo.onerror=()=>photo.remove();studentPhotoPreview.append(photo);}
+        if(photoUrl){const photo=node('img');photo.src=photoUrl;photo.alt='Foto biométrica de '+selectedStudent.full_name;photo.loading='lazy';photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';photo.onerror=()=>photo.remove();studentPhotoPreview.append(photo);}
         else{const initials=String(selectedStudent.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();studentPhotoPreview.textContent=initials||'AL';}
       }
       updateTechnicalStudentPhoto();
@@ -1559,7 +1559,7 @@ async function renderStudents(content){
       tableWrap.replaceChildren();
       if(!rows.length){tableWrap.append(node('div','Nenhum aluno encontrado para os filtros selecionados.','empty'));return;}
       const table=node('table'),thead=node('thead'),hr=node('tr');['Nome do aluno','Faixa','Data de matrícula','Biometria','Nº de origem','Ficha'].forEach(t=>hr.append(node('th',t)));thead.append(hr);table.append(thead);const tbody=node('tbody');
-      rows.forEach(s=>{const tr=node('tr');const nameCell=node('td');const nameWrap=node('div',undefined,'student-name-cell');const initials=String(s.full_name||'Aluno').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();const avatar=node('div',initials||'AL','student-list-avatar');avatar.setAttribute('aria-label',studentPhotoUrls.has(s.id)?'Fotografia autorizada do aluno':'Foto não cadastrada; identificação reservada');const photoUrl=studentPhotoUrls.get(s.id);if(photoUrl&&s.biometric_completed){const photo=node('img');photo.src=photoUrl;photo.alt='Foto do aluno';photo.loading='lazy';photo.onerror=()=>{photo.remove();};avatar.append(photo);}nameWrap.append(avatar,node('span',String(s.full_name??'—')));nameCell.append(nameWrap);tr.append(nameCell,node('td',String(s.belt??'—')),node('td',String(s.enrollment_date??'—')),node('td',s.biometric_completed?'Concluída':'Pendente'),node('td',String(s.source_row_number??'—')));const td=node('td');const open=node('button','Abrir ficha','student-row-btn');open.type='button';open.addEventListener('click',()=>openStudentFicha(s.id));td.append(open);tr.append(td);tbody.append(tr);});table.append(tbody);tableWrap.append(table);
+      rows.forEach(s=>{const tr=node('tr');const nameCell=node('td');const nameWrap=node('div',undefined,'student-name-cell');const initials=String(s.full_name||'Aluno').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();const avatar=node('div',initials||'AL','student-list-avatar');avatar.setAttribute('aria-label',studentPhotoUrls.has(s.id)?'Fotografia autorizada do aluno':'Foto não cadastrada; identificação reservada');const photoUrl=studentPhotoUrls.get(s.id);if(photoUrl){const photo=node('img');photo.src=photoUrl;photo.alt='Foto do aluno';photo.loading='lazy';photo.onerror=()=>{photo.remove();};avatar.append(photo);}nameWrap.append(avatar,node('span',String(s.full_name??'—')));nameCell.append(nameWrap);tr.append(nameCell,node('td',String(s.belt??'—')),node('td',String(s.enrollment_date??'—')),node('td',s.biometric_completed?'Concluída':'Pendente'),node('td',String(s.source_row_number??'—')));const td=node('td');const open=node('button','Abrir ficha','student-row-btn');open.type='button';open.addEventListener('click',()=>openStudentFicha(s.id));td.append(open);tr.append(td);tbody.append(tr);});table.append(tbody);tableWrap.append(table);
     }
     draw();search.addEventListener('input',draw);beltFilter.addEventListener('change',draw);
   }catch(err){status.remove();summary.remove();tools.remove();tableWrap.append(node('div','Não foi possível carregar a lista de alunos.','error-box'),node('p','A consulta depende das permissões RLS e dos nomes das colunas da tabela students. Mensagem retornada: '+(err.message||String(err)),'status-line'));}
@@ -1864,7 +1864,7 @@ $('resetBtn').addEventListener('click',async()=>{
         const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({student_id:data.student_id,image:jpeg,turnstile_token:token})});
         const resultBio=await response.json().catch(()=>({}));
         if(!response.ok)throw new Error(resultBio.error||'Não foi possível concluir a biometria.');
-        stopBioCamera();bioStatus.textContent='Biometria concluída e fotografia armazenada com segurança.';bioStatus.style.color='#166534';bioConsent.disabled=true;bioStart.disabled=true;bioCapture.style.display='none';bioCancel.style.display='none';window.turnstile.remove(bioWidget);
+        stopBioCamera();bioStatus.textContent='Biometria concluída e fotografia armazenada com segurança.';bioStatus.style.color='#166534';setTimeout(()=>window.location.reload(),1200);bioConsent.disabled=true;bioStart.disabled=true;bioCapture.style.display='none';bioCancel.style.display='none';window.turnstile.remove(bioWidget);
        }catch(err){bioStatus.textContent=err.message||'Falha ao enviar a fotografia.';bioStatus.style.color='#9b1c1c';bioCapture.disabled=false;window.turnstile.reset(bioWidget);}
       });
      }else{
@@ -1912,7 +1912,7 @@ $('resetBtn').addEventListener('click',async()=>{
           const {data:{session}}=await supabaseClient.auth.getSession();if(!session?.access_token)throw new Error('Sessão expirada. Entre novamente.');
           const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({student_id:data.student_id,image:jpeg,turnstile_token:token})});
           const resultBio=await response.json().catch(()=>({}));if(!response.ok)throw new Error(resultBio.error||'Não foi possível concluir a biometria.');
-          stopCamera();status.textContent='Biometria concluída e fotografia armazenada com segurança.';status.style.color='#166534';consent.disabled=true;start.disabled=true;capture.style.display='none';cancel.style.display='none';window.turnstile.remove(widget);
+          stopCamera();status.textContent='Biometria concluída e fotografia armazenada com segurança.';status.style.color='#166534';setTimeout(()=>window.location.reload(),1200);consent.disabled=true;start.disabled=true;capture.style.display='none';cancel.style.display='none';window.turnstile.remove(widget);
          }catch(bioError){status.textContent=bioError.message||'Falha ao enviar a fotografia.';status.style.color='#9b1c1c';capture.disabled=false;window.turnstile.reset(widget);}
         });
        }catch(loginError){existingMessage.textContent=loginError.message||'Não foi possível confirmar o acesso.';existingMessage.style.color='#9b1c1c';existingButton.disabled=false;existingButton.textContent='Tentar novamente';window.turnstile.reset(existingWidget);}
