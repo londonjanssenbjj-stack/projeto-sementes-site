@@ -689,7 +689,7 @@ async function loadDashboard(){
   const guardian=currentProfile.role==='guardian';
   const dashNav=$('dashNav');
   dashNav.replaceChildren();
-  if(guardian){const familyTab=node('button','Área da Família','active');familyTab.type='button';familyTab.dataset.view='familia';dashNav.append(familyTab);dashNav.style.display='';}
+  if(guardian){[['guardian-overview','Visão Geral'],['guardian-students','Alunos'],['guardian-attendance','Frequência'],['guardian-evaluation','Avaliação'],['guardian-graduation','Graduação'],['guardian-activities','Atividades']].forEach(([view,label],i)=>{const b=node('button',label,i===0?'active':'');b.type='button';b.dataset.view=view;dashNav.append(b);});dashNav.style.display='';}
   else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['relatorios','Relatórios']].forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
     $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
   setPrivateMode(true);
@@ -698,10 +698,10 @@ async function loadDashboard(){
     return;
   }
   $('passwordChangeGate').style.display='none';$('dashContent').style.display='';
-  await renderView(guardian?'familia':'inicio');
+  await renderView(guardian?'guardian-overview':'inicio');
 }
 function makeKpi(label,value){const box=node('div',undefined,'kpi');box.append(node('strong',String(value)),node('span',label));return box;}
-async function renderGuardianFamily(content){
+async function renderGuardianFamily(content,view='guardian-overview'){
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Acompanhamento familiar'),node('p','Aqui aparecem somente os alunos vinculados e autorizados para esta conta.'));
   content.append(panel);
@@ -718,6 +718,74 @@ async function renderGuardianFamily(content){
   if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
   if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
 
+  const familyTitle=node('h2','Acompanhamento familiar');
+  panel.replaceChildren(familyTitle,node('p','Aqui aparecem somente os alunos vinculados e autorizados para esta conta.'));
+  const idsSet=new Set(ids);
+  const fmtDate=value=>value?new Date(value+'T00:00:00').toLocaleDateString('pt-BR'):'—';
+  const section=(title,subtitle)=>{const box=node('section',undefined,'dash-panel');box.append(node('h3',title));if(subtitle)box.append(node('p',subtitle,'status-line'));content.append(box);return box;};
+  const listRows=(box,headers,rows)=>{
+    if(!rows.length){box.append(node('p','Nenhum registro disponível.','status-line'));return;}
+    const wrap=node('div',undefined,'table-wrap'),table=node('table');
+    const thead=node('thead'),trh=node('tr');headers.forEach(h=>trh.append(node('th',h)));thead.append(trh);table.append(thead);
+    const tbody=node('tbody');rows.forEach(row=>{const tr=node('tr');row.forEach(v=>tr.append(node('td',String(v??'—'))));tbody.append(tr);});table.append(tbody);wrap.append(table);box.append(wrap);
+  };
+  if(view==='guardian-overview'){
+    const box=section('Resumo dos seus alunos','Acompanhamento restrito aos alunos vinculados à sua conta.');
+    const kpis=node('div',undefined,'kpis');
+    kpis.append(makeKpi('Alunos vinculados',children.length),makeKpi('Biometrias registradas',children.filter(x=>x.biometric_completed).length),makeKpi('Biometrias pendentes',children.filter(x=>!x.biometric_completed).length));
+    box.append(kpis);
+    children.forEach(ch=>{const c=node('article',undefined,'activity-card');c.append(node('h3',ch.full_name||'Aluno'),node('p','Turma e faixa: '+(ch.belt||'Não informada')+' • Matrícula: '+fmtDate(ch.enrollment_date),'status-line'));box.append(c);});
+    const activityBox=section('Próximas atividades','Eventos e atividades divulgados pelo Projeto Sementes.');
+    const [lectures,actions]=await Promise.all([
+      supabaseClient.from('lectures').select('title,topic,scheduled_at,location,status').order('scheduled_at',{ascending:true}).limit(5),
+      supabaseClient.from('social_actions').select('title,category,action_date,location,status').order('action_date',{ascending:true}).limit(5)
+    ]);
+    const upcoming=[...(lectures.data||[]).map(x=>({date:x.scheduled_at,title:x.title||x.topic,place:x.location,type:'Palestra'})),...(actions.data||[]).map(x=>({date:x.action_date,title:x.title,place:x.location,type:'Atividade'}))].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(0,6);
+    listRows(activityBox,['Tipo','Atividade','Data','Local'],upcoming.map(x=>[x.type,x.title,fmtDate(String(x.date||'').slice(0,10)),x.place||'—']));
+    return;
+  }
+  if(view==='guardian-attendance'){
+    const box=section('Frequência','Presenças e faltas registradas para seus alunos.');
+    const {data:lessons,error:le}=await supabaseClient.from('lessons').select('id,lesson_date,topic').order('lesson_date',{ascending:false});
+    if(le){box.append(node('p','Não foi possível carregar as aulas: '+le.message,'status-line error'));return;}
+    const lessonMap=new Map((lessons||[]).map(x=>[x.id,x]));
+    const {data:rows,error:ae}=await supabaseClient.from('attendance').select('student_id,lesson_id,status').in('student_id',ids).order('recorded_at',{ascending:false}).limit(500);
+    if(ae){box.append(node('p','Não foi possível carregar a frequência: '+ae.message,'status-line error'));return;}
+    const names=new Map(children.map(x=>[x.id,x.full_name]));
+    const totals=new Map();(rows||[]).forEach(x=>{const t=totals.get(x.student_id)||{present:0,absent:0,excused:0,total:0};t.total++;if(x.status==='present')t.present++;else if(x.status==='absent')t.absent++;else if(x.status==='excused')t.excused++;totals.set(x.student_id,t);});
+    listRows(box,['Aluno','Aulas lançadas','Presenças','Faltas','Justificadas','Frequência'],children.map(ch=>{const t=totals.get(ch.id)||{present:0,absent:0,excused:0,total:0};return[ch.full_name,t.total,t.present,t.absent,t.excused,t.total?Math.round(t.present/t.total*100)+'%':'—'];}));
+    listRows(box,['Aluno','Data da aula','Situação'],(rows||[]).slice(0,100).map(x=>[names.get(x.student_id)||'Aluno',fmtDate(lessonMap.get(x.lesson_id)?.lesson_date),({present:'Presente',absent:'Falta',excused:'Justificada'}[x.status]||x.status)]));
+    return;
+  }
+  if(view==='guardian-evaluation'){
+    const box=section('Avaliação técnica','Avaliações registradas pelos professores para seus alunos.');
+    const {data,error}=await supabaseClient.from('technical_evaluations').select('student_id,evaluated_on,evaluation').in('student_id',ids).order('evaluated_on',{ascending:false}).limit(200);
+    if(error){box.append(node('p','Não foi possível carregar as avaliações: '+error.message,'status-line error'));return;}
+    const names=new Map(children.map(x=>[x.id,x.full_name]));
+    listRows(box,['Aluno','Data','Avaliação'],(data||[]).map(x=>[names.get(x.student_id)||'Aluno',fmtDate(x.evaluated_on),x.evaluation]));
+    return;
+  }
+  if(view==='guardian-graduation'){
+    const box=section('Graduação','Faixa atual e histórico de graduações dos seus alunos.');
+    const {data,error}=await supabaseClient.from('graduations').select('student_id,belt,degrees,awarded_on,note').in('student_id',ids).order('awarded_on',{ascending:false}).limit(200);
+    if(error){box.append(node('p','Não foi possível carregar as graduações: '+error.message,'status-line error'));return;}
+    const names=new Map(children.map(x=>[x.id,x.full_name]));
+    listRows(box,['Aluno','Faixa','Graus','Data','Observação'],(data||[]).map(x=>[names.get(x.student_id)||'Aluno',x.belt,x.degrees||'—',fmtDate(x.awarded_on),x.note||'—']));
+    return;
+  }
+  if(view==='guardian-activities'){
+    const box=section('Atividades do projeto','Palestras, treinamentos, ações sociais e eventos.');
+    const [lectures,actions]=await Promise.all([
+      supabaseClient.from('lectures').select('title,topic,scheduled_at,location,speaker,status').order('scheduled_at',{ascending:false}).limit(100),
+      supabaseClient.from('social_actions').select('title,category,action_date,location,status,description').order('action_date',{ascending:false}).limit(100)
+    ]);
+    if(lectures.error)box.append(node('p','Palestras: '+lectures.error.message,'status-line error'));
+    if(actions.error)box.append(node('p','Atividades: '+actions.error.message,'status-line error'));
+    const all=[...(lectures.data||[]).map(x=>['Palestra',x.title||x.topic,fmtDate(String(x.scheduled_at||'').slice(0,10)),x.location||'—',x.status||'—']),...(actions.data||[]).map(x=>['Ação social',x.title,fmtDate(x.action_date),x.location||'—',x.status||'—'])];
+    all.sort((a,b)=>String(b[2]).localeCompare(String(a[2])));
+    listRows(box,['Tipo','Atividade','Data','Local','Situação'],all);
+    return;
+  }
   let turnstileLoader=null;
   const ensureTurnstile=async()=>{
     if(window.turnstile)return window.turnstile;
@@ -1337,8 +1405,8 @@ async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
   if(currentProfile&&currentProfile.role==='guardian'){
-    if(view!=='familia'){await renderGuardianFamily(content);return;}
-    await renderGuardianFamily(content);return;
+    const allowed=['guardian-overview','guardian-students','guardian-attendance','guardian-evaluation','guardian-graduation','guardian-activities'];
+    await renderGuardianFamily(content,allowed.includes(view)?view:'guardian-overview');return;
   }
   if(view==='inicio'){await renderOverview(content);return;}
   if(view==='alunos'){await renderStudents(content);return;}
