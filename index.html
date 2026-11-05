@@ -853,7 +853,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
         const status=marks.some(x=>x.status==='present')?'present':marks.some(x=>x.status==='absent')?'absent':marks.some(x=>x.status==='excused')?'excused':'none';
         const colors={present:['#e7f5eb','#176b35'],absent:['#fdecec','#a12626'],excused:['#fff5d8','#8a6200'],none:['#f2f3f5','#657080']};
         cell.style.cssText='padding:7px 2px;border-radius:5px;background:'+colors[status][0]+';color:'+colors[status][1]+';font-size:12px;font-weight:700;min-height:32px';
-        cell.title=marks.length?marks.map(x=>({present:'Presente',absent:'Falta',excused:'Justificada'}[x.status]||x.status).join(', '):'Sem chamada registrada';grid.append(cell);
+        cell.title=marks.length?marks.map(x=>({present:'Presente',absent:'Falta',excused:'Justificada'}[x.status]||x.status)).join(', '):'Sem chamada registrada';grid.append(cell);
       }
       monthCard.append(grid);calendarBox.append(monthCard);
     });
