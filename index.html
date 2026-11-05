@@ -1269,6 +1269,7 @@ async function renderTechnicalProgress(content){
     classSelect.replaceChildren();
     (classes||[]).forEach(c=>{const o=node('option',c.name);o.value=c.id;classSelect.append(o);});
     if(!classes||!classes.length){status.textContent='Nenhuma turma autorizada para este perfil.';return;}
+    let technicalPhotoUrls=new Map();
     async function loadStudents(){
       studentSelect.replaceChildren();
       const {data:links,error:linkError}=await supabaseClient.from('class_enrollments').select('student_id').eq('class_id',classSelect.value).eq('active',true);
@@ -1277,7 +1278,7 @@ async function renderTechnicalProgress(content){
       if(!ids.length){status.textContent='Não há alunos ativos nesta turma.';return;}
       const {data:students,error:studentError}=await supabaseClient.from('students').select('id,full_name,biometric_completed').in('id',ids).order('full_name');
       if(studentError)throw studentError;
-      let technicalPhotoUrls=new Map();
+      technicalPhotoUrls=new Map();
       try{technicalPhotoUrls=await getAuthorizedBiometricPhotoUrls((students||[]).map(st=>st.id));}
       catch(photoError){console.warn('Fotografias biométricas não carregadas na avaliação.',photoError);}
       (students||[]).forEach(st=>{const o=node('option',st.full_name);o.value=st.id;studentSelect.append(o);});
