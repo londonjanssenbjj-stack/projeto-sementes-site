@@ -352,6 +352,39 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  #fe-familia .family-copy h2{font-size:36px}
 }
 </style>
+<style>
+/* Refinamento visual exclusivo da Área da Família */
+#dashboard.guardian-area .dash-head.guardian-dash-head{display:flex;align-items:center;gap:20px;padding:22px 26px;border-radius:10px;box-shadow:0 8px 24px rgba(11,27,48,.12)}
+#dashboard.guardian-area .guardian-header-logo{width:76px;height:76px;object-fit:contain;flex:0 0 76px;padding:5px;background:rgba(255,255,255,.97);border-radius:12px}
+#dashboard.guardian-area .dash-head.guardian-dash-head>div{flex:1;min-width:220px}
+#dashboard.guardian-area .dash-head .eyebrow{margin-bottom:10px}
+#dashboard.guardian-area .dash-nav{gap:10px;margin:20px 0}
+#dashboard.guardian-area .dash-nav button{border-radius:8px;padding:11px 16px;transition:background .18s,border-color .18s,transform .18s}
+#dashboard.guardian-area .dash-nav button:hover{transform:translateY(-1px);border-color:#d7b34b}
+#dashboard.guardian-area .dash-panel{border-radius:10px;padding:24px;box-shadow:0 5px 20px rgba(11,27,48,.045)}
+#dashboard.guardian-area .dash-panel h2{font-size:23px;letter-spacing:-.5px}
+#dashboard.guardian-area .guardian-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}
+#dashboard.guardian-area .guardian-kpis .kpi{position:relative;min-height:116px;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:19px 18px 17px 68px;border:1px solid #e5e8ee;border-radius:10px;background:linear-gradient(145deg,#fff 0%,#fbfcfe 100%);box-shadow:0 4px 14px rgba(11,27,48,.045);overflow:hidden}
+#dashboard.guardian-area .guardian-kpis .kpi:before{position:absolute;left:17px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:#f7f0dc;color:#9b741b;font-size:20px;font-weight:800}
+#dashboard.guardian-area .guardian-kpis .kpi[data-metric="0"]:before{content:"♙"}
+#dashboard.guardian-area .guardian-kpis .kpi[data-metric="1"]:before{content:"↗"}
+#dashboard.guardian-area .guardian-kpis .kpi[data-metric="2"]:before{content:"◎"}
+#dashboard.guardian-area .guardian-kpis .kpi[data-metric="3"]:before{content:"!"}
+#dashboard.guardian-area .guardian-kpis .kpi strong{font:800 29px Manrope,sans-serif;line-height:1;color:#0b1b30}
+#dashboard.guardian-area .guardian-kpis .kpi span{font-size:11px;line-height:1.35;font-weight:700;color:#667085}
+#dashboard.guardian-area .guardian-student-card{border:1px solid #e5e8ee;border-left:4px solid #d7b34b;border-radius:10px;background:#fff;box-shadow:0 5px 18px rgba(11,27,48,.055);padding:20px!important}
+#dashboard.guardian-area .guardian-student-card h3{font:800 18px Manrope,sans-serif;color:#10243e;margin:0 0 5px}
+#dashboard.guardian-area .guardian-student-card summary{padding:5px 2px 14px;list-style:none}
+#dashboard.guardian-area .guardian-student-card summary::-webkit-details-marker{display:none}
+#dashboard.guardian-area .guardian-student-card summary:after{content:"＋";float:right;color:#a47b1b;font-size:19px;font-weight:800}
+#dashboard.guardian-area .guardian-student-card[open] summary:after{content:"−"}
+#dashboard.guardian-area .guardian-student-card .status-line{line-height:1.6;color:#596579}
+#dashboard.guardian-area .guardian-student-card img{border:3px solid #f0dfaa;box-shadow:0 2px 8px rgba(11,27,48,.12)}
+#dashboard.guardian-area .guardian-student-card section.status-line{background:#fbfaf6!important;border:1px solid #e9e3d5!important;border-left:3px solid #d7b34b!important;border-radius:9px!important;padding:16px!important}
+#dashboard.guardian-area .guardian-student-card .btn-gold{border-radius:8px;box-shadow:0 3px 9px rgba(158,119,25,.15)}
+@media(max-width:900px){#dashboard.guardian-area .guardian-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){#dashboard.guardian-area .dash-head.guardian-dash-head{gap:12px;padding:17px;align-items:center}#dashboard.guardian-area .guardian-header-logo{width:58px;height:58px;flex-basis:58px}#dashboard.guardian-area .dash-head.guardian-dash-head>div{min-width:0}#dashboard.guardian-area .dash-head h1{font-size:18px}#dashboard.guardian-area .guardian-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#dashboard.guardian-area .guardian-kpis .kpi{min-height:104px;padding:14px 10px 14px 48px}#dashboard.guardian-area .guardian-kpis .kpi:before{left:9px;width:30px;height:30px;font-size:16px}#dashboard.guardian-area .guardian-kpis .kpi strong{font-size:24px}#dashboard.guardian-area .dash-panel{padding:17px}#dashboard.guardian-area .guardian-student-card{padding:15px!important}}
+</style>
 </head>
 <body>
 <header id="publicHeader">
@@ -699,6 +732,12 @@ async function loadDashboard(){
   if(guardian){[['guardian-overview','Visão Geral'],['guardian-students','Alunos'],['guardian-attendance','Frequência'],['guardian-evaluation','Avaliação'],['guardian-graduation','Graduação'],['guardian-activities','Comunicados'],['guardian-documents','Documentos']].forEach(([view,label],i)=>{const b=node('button',label,i===0?'active':'');b.type='button';b.dataset.view=view;dashNav.append(b);});dashNav.style.display='';}
   else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['campeao','Campeão'],['relatorios','Relatórios']].filter(([view])=>view!=='campeao'||currentProfile.role==='admin').forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
     $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
+  const familyDashHead=$('dashboard').querySelector('.dash-head');
+  familyDashHead.classList.toggle('guardian-dash-head',guardian);
+  const existingFamilyLogo=familyDashHead.querySelector('.guardian-header-logo');
+  if(guardian&&!existingFamilyLogo){const logo=document.createElement('img');logo.className='guardian-header-logo';logo.src='logo_principal.png%20.png';logo.alt='Logotipo do Projeto Sementes';familyDashHead.prepend(logo);}
+  if(!guardian&&existingFamilyLogo)existingFamilyLogo.remove();
+  $('dashboard').classList.toggle('guardian-area',guardian);
   setPrivateMode(true);
   if(guardian && user.user_metadata?.must_change_password===true){
     $('dashNav').style.display='none';$('dashContent').style.display='none';$('passwordChangeGate').style.display='';
@@ -794,7 +833,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     const classResult=classIds.length?await supabaseClient.from('classes').select('id,name').in('id',classIds):{data:[]};
     const classNames=new Map((classResult.data||[]).map(x=>[x.id,x.name]));
     children.forEach(ch=>{
-      const card=node('article',undefined,'activity-card');card.style.cssText='padding:16px;margin-bottom:14px';
+      const card=node('article',undefined,'activity-card guardian-student-card');card.style.cssText='padding:16px;margin-bottom:14px';
       const head=node('div',undefined,'student-tools');head.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap';
       const photoUrl=photoUrls.get(ch.id);
       if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(ch.full_name||'aluno');img.loading='lazy';img.style.cssText='width:76px;height:76px;object-fit:cover;border-radius:50%';head.append(img);}
@@ -835,15 +874,16 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     (attendanceResult.data||[]).forEach(x=>{const t=attendanceTotals.get(x.student_id)||{present:0,total:0};t.total++;if(x.status==='present')t.present++;attendanceTotals.set(x.student_id,t);});
     const avgFrequency=children.length?Math.round(children.reduce((sum,ch)=>{const t=attendanceTotals.get(ch.id);return sum+(t&&t.total?t.present/t.total*100:0);},0)/children.length):0;
     const pendingStudents=children.filter(x=>!x.biometric_completed);
-    const kpis=node('div',undefined,'kpis');
+    const kpis=node('div',undefined,'kpis guardian-kpis');
     kpis.append(makeKpi('Alunos vinculados',children.length),makeKpi('Frequência média',avgFrequency+'%'),makeKpi('Biometrias concluídas',children.filter(x=>x.biometric_completed).length),makeKpi('Pendências',pendingStudents.length));
+    kpis.querySelectorAll('.kpi').forEach((item,index)=>{item.dataset.metric=String(index);});
     box.append(kpis);
     const photoUrls=await getAuthorizedBiometricPhotoUrls(ids).catch(()=>new Map());
     const classIds=[...new Set((enrollmentResult.data||[]).map(x=>x.class_id).filter(Boolean))];
     const classResult=classIds.length?await supabaseClient.from('classes').select('id,name').in('id',classIds):{data:[]};
     const classNames=new Map((classResult.data||[]).map(x=>[x.id,x.name]));
       children.forEach(ch=>{
-      const c=node('details',undefined,'activity-card');c.style.cssText='padding:14px';
+      const c=node('details',undefined,'activity-card guardian-student-card');c.style.cssText='padding:14px';
       const header=node('summary',undefined,'student-tools');header.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap;cursor:pointer';
       const photoUrl=photoUrls.get(ch.id);
       if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(ch.full_name||'aluno');img.loading='lazy';img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:50%';header.append(img);}else{const photoMissing=node('span','Foto não cadastrada','status-line');photoMissing.style.cssText='width:64px;height:64px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed #c9c9c9;border-radius:50%;font-size:10px';header.append(photoMissing);}
