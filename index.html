@@ -671,8 +671,17 @@ function openModal(mode='team'){
 function closeModal(){modal.classList.remove('open');}
 function showMessage(text,kind){message.textContent=text;message.className='message show '+kind;}
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-$('openGuardianLogin').addEventListener('click',()=>openModal('guardian'));$('openTeamLogin').addEventListener('click',()=>openModal('team'));$('closeLogin').addEventListener('click',closeModal);
-modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+document.addEventListener('click',e=>{
+  const trigger=e.target.closest('#openGuardianLogin,#openTeamLogin,#closeLogin');
+  if(trigger){
+    if(trigger.id==='openGuardianLogin')openModal('guardian');
+    else if(trigger.id==='openTeamLogin')openModal('team');
+    else closeModal();
+    return;
+  }
+  if(e.target===modal)closeModal();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 function setPrivateMode(on){$('publicHeader').style.display=on?'none':'';$('publicSite').style.display=on?'none':'';$('publicFooter').style.display=on?'none':'';$('dashboard').classList.toggle('show',on);if(on)window.scrollTo(0,0);}
 function niceRole(role){return ({admin:'Administrador',teacher:'Professor',guardian:'Responsável'})[role]||role||'Usuário';}
 async function getProfile(user){
