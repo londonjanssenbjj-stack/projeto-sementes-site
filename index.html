@@ -731,11 +731,13 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   };
   if(view==='guardian-overview'){
     const box=section('Resumo dos seus alunos','Acompanhamento restrito aos alunos vinculados à sua conta.');
-    const [attendanceResult,evaluationResult,graduationResult,enrollmentResult]=await Promise.all([
+    const [attendanceResult,evaluationResult,graduationResult,enrollmentResult,activityHistoryResult,competitionHistoryResult]=await Promise.all([
       supabaseClient.from('attendance').select('student_id,status').in('student_id',ids).limit(1000),
       supabaseClient.from('technical_evaluations').select('student_id,evaluated_on,evaluation').in('student_id',ids).order('evaluated_on',{ascending:false}).limit(200),
       supabaseClient.from('graduations').select('student_id,belt,degrees,awarded_on').in('student_id',ids).order('awarded_on',{ascending:false}).limit(200),
-      supabaseClient.from('class_enrollments').select('student_id,class_id').in('student_id',ids).eq('active',true)
+      supabaseClient.from('class_enrollments').select('student_id,class_id').in('student_id',ids).eq('active',true),
+      supabaseClient.from('activity_participations').select('student_id,lecture_id,social_action_id,participated,notes').in('student_id',ids).eq('participated',true),
+      supabaseClient.from('competition_participants').select('student_id,competition_id,placement,medal,division').in('student_id',ids)
     ]);
     const attendanceTotals=new Map();
     (attendanceResult.data||[]).forEach(x=>{const t=attendanceTotals.get(x.student_id)||{present:0,total:0};t.total++;if(x.status==='present')t.present++;attendanceTotals.set(x.student_id,t);});
@@ -759,6 +761,9 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       const details=node('p','Matrícula: '+fmtDate(ch.enrollment_date)+' • Frequência: '+(t.total?Math.round(t.present/t.total*100)+'%':'Sem registros')+' • Última avaliação: '+(evaluation?fmtDate(evaluation.evaluated_on):'Sem avaliação')+' • Última graduação: '+(graduation?graduation.belt+' ('+fmtDate(graduation.awarded_on)+')':'Sem registro'),'status-line');
       c.append(details);
       const bioBadge=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bioBadge.style.fontWeight='700';bioBadge.style.color=ch.biometric_completed?'#16803c':'#9a6b00';c.append(bioBadge);
+      const studentActivities=(activityHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
+      const studentCompetitions=(competitionHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
+      c.append(node('p','Atividades registradas: '+studentActivities.length+' • Competições: '+studentCompetitions.length,'status-line'));
       box.append(c);
     });
     const alerts=children.filter(x=>!x.biometric_completed);
@@ -1575,9 +1580,13 @@ async function renderActivities(content){
       if(lecturesResult.error)throw lecturesResult.error;
       if(actionsResult.error)throw actionsResult.error;
       const items=[
-        ...(lecturesResult.data||[]).map(x=>({...x,_kind:'Palestra / treinamento',_date:x.scheduled_at})),
-        ...(actionsResult.data||[]).map(x=>({...x,_kind:'Ação social',_date:x.action_date}))
+        ...(lecturesResult.data||[]).map(x=>({...x,_kind:'Palestra / treinamento',_date:x.scheduled_at,_table:'lecture'})),
+        ...(actionsResult.data||[]).map(x=>({...x,_kind:'Ação social',_date:x.action_date,_table:'social'}))
       ].sort((a,b)=>String(b._date||'').localeCompare(String(a._date||'')));
+      const [studentResult,participationResult]=isAdmin?await Promise.all([
+        supabaseClient.from('students').select('id,full_name').order('full_name'),
+        supabaseClient.from('activity_participations').select('student_id,lecture_id,social_action_id,participated')
+      ]):[{data:[]},{data:[]}];
       items.forEach(item=>{
         const card=node('article',undefined,'activity-card');
         const head=node('div',undefined,'activity-card-head');
@@ -1601,6 +1610,30 @@ async function renderActivities(content){
           const remove=node('button','Excluir','btn btn-outline small-btn');remove.type='button';
           const feedback=node('p','','status-line');
           management.append(state,participants,resultNote,update,remove,feedback);
+          const roster=node('div',undefined,'activity-card');roster.append(node('strong','Registrar participação dos alunos'));
+          const selectedIds=new Set((participationResult.data||[]).filter(p=>(item._table==='lecture'?p.lecture_id===item.id:p.social_action_id===item.id)&&p.participated).map(p=>p.student_id));
+          const checks=[];
+          (studentResult.data||[]).forEach(st=>{
+            const label=node('label',undefined,'status-line');label.style.cssText='display:flex;align-items:center;gap:8px;margin:6px 0';
+            const check=node('input');check.type='checkbox';check.checked=selectedIds.has(st.id);label.append(check,node('span',st.full_name));roster.append(label);checks.push({id:st.id,check});
+          });
+          const saveRoster=node('button','Salvar participantes','btn btn-gold small-btn');saveRoster.type='button';
+          const rosterMsg=node('p','','status-line');roster.append(saveRoster,rosterMsg);management.append(roster);
+          saveRoster.addEventListener('click',async()=>{
+            saveRoster.disabled=true;rosterMsg.textContent='Salvando participantes…';
+            try{
+              const table=item._table==='lecture'?'lecture_id':'social_action_id';
+              const activityKey={lecture_id:null,social_action_id:null};activityKey[table]=item.id;
+              const chosen=checks.filter(x=>x.check.checked).map(x=>x.id);
+              const existing=(participationResult.data||[]).filter(x=>(item._table==='lecture'?x.lecture_id===item.id:x.social_action_id===item.id));
+              const payload=chosen.map(student_id=>({student_id,...activityKey,participated:true,recorded_by:currentProfile.id}));
+              if(payload.length){const {error}=await supabaseClient.from('activity_participations').upsert(payload,{onConflict:item._table==='lecture'?'student_id,lecture_id':'student_id,social_action_id'});if(error)throw error;}
+              const unselected=existing.filter(x=>!chosen.includes(x.student_id)).map(x=>x.student_id);
+              if(unselected.length){let query=supabaseClient.from('activity_participations').update({participated:false}).in('student_id',unselected);query=item._table==='lecture'?query.eq('lecture_id',item.id):query.eq('social_action_id',item.id);const {error}=await query;if(error)throw error;}
+              rosterMsg.textContent='Participações salvas no histórico dos alunos.';rosterMsg.className='status-line success';await loadActivities();
+            }catch(err){rosterMsg.textContent='Erro ao salvar participantes: '+(err.message||String(err));rosterMsg.className='status-line error';}
+            finally{saveRoster.disabled=false;}
+          });
           card.append(management);
           update.addEventListener('click',async()=>{
             update.disabled=true;feedback.textContent='Salvando…';
