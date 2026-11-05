@@ -690,7 +690,7 @@ async function loadDashboard(){
   const dashNav=$('dashNav');
   dashNav.replaceChildren();
   if(guardian){[['guardian-overview','Visão Geral'],['guardian-students','Alunos'],['guardian-attendance','Frequência'],['guardian-evaluation','Avaliação'],['guardian-graduation','Graduação'],['guardian-activities','Atividades']].forEach(([view,label],i)=>{const b=node('button',label,i===0?'active':'');b.type='button';b.dataset.view=view;dashNav.append(b);});dashNav.style.display='';}
-  else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['relatorios','Relatórios']].forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
+  else{dashNav.style.display='';[['inicio','Visão geral'],['alunos','Alunos'],['chamada','Turmas e chamada'],['historico','Frequência'],['tecnica','Avaliação e graduação'],['atividades','Atividades'],['campeao','Campeão'],['relatorios','Relatórios']].forEach(([view,label])=>{const b=node('button',label);b.type='button';b.dataset.view=view;dashNav.append(b);});}
     $('dashboard').querySelector('.dash-head h1').textContent=guardian?'Área da Família — Projeto Sementes':'Painel de Gestão — Projeto Sementes';
   setPrivateMode(true);
   if(guardian && user.user_metadata?.must_change_password===true){
@@ -822,9 +822,21 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     ]);
     if(lectures.error)box.append(node('p','Palestras: '+lectures.error.message,'status-line error'));
     if(actions.error)box.append(node('p','Atividades: '+actions.error.message,'status-line error'));
-    const all=[...(lectures.data||[]).map(x=>['Palestra',x.title||x.topic,fmtDate(String(x.scheduled_at||'').slice(0,10)),x.location||'—',x.status||'—']),...(actions.data||[]).map(x=>['Ação social',x.title,fmtDate(x.action_date),x.location||'—',x.status||'—'])];
-    all.sort((a,b)=>String(b[2]).localeCompare(String(a[2])));
-    listRows(box,['Tipo','Atividade','Data','Local','Situação'],all);
+    const [participations,studentList]=await Promise.all([
+      supabaseClient.from('activity_participations').select('student_id,lecture_id,social_action_id,participated,notes').in('student_id',ids),
+      Promise.resolve(children)
+    ]);
+    const participationRows=participations.data||[];
+    const all=[...(lectures.data||[]).map(x=>({kind:'lecture',id:x.id,type:'Palestra',title:x.title||x.topic,date:fmtDate(String(x.scheduled_at||'').slice(0,10)),place:x.location||'—',status:x.status||'—'})),...(actions.data||[]).map(x=>({kind:'social',id:x.id,type:'Ação social',title:x.title,date:fmtDate(x.action_date),place:x.location||'—',status:x.status||'—'}))].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    all.forEach(item=>{
+      const own=participationRows.filter(x=>(item.kind==='lecture'?x.lecture_id===item.id:x.social_action_id===item.id)&&x.participated);
+      const mine=own.filter(x=>ids.includes(x.student_id));
+      if(!mine.length)return;
+      const card=node('article',undefined,'activity-card');card.append(node('h3',item.title||item.type),node('p',item.type+' • '+item.date+' • '+item.place,'status-line'));
+      mine.forEach(p=>{const student=studentList.find(x=>x.id===p.student_id);if(student)card.append(node('p',(student.full_name||'Aluno')+' — Participou','status-line'));});
+      box.append(card);
+    });
+    if(!box.querySelector('.activity-card'))box.append(node('p','Nenhuma participação em atividade foi registrada para seus alunos.','status-line'));
     return;
   }
   let turnstileLoader=null;
@@ -1463,6 +1475,7 @@ async function renderView(view){
   if(view==='chamada'){await renderClassAttendance(content);return;}
   if(view==='historico'){await renderAttendanceHistory(content);return;}
   if(view==='tecnica'){await renderTechnicalProgress(content);return;}
+  if(view==='campeao'){await renderChampions(content);return;}
   if(view==='relatorios'){await renderStudentReports(content);return;}
   await renderActivities(content);
 
@@ -1620,6 +1633,76 @@ async function renderActivities(content){
   }
   content.append(panel);
   await loadActivities();
+}
+
+async function renderChampions(content){
+  const panel=node('div',undefined,'dash-panel');
+  panel.append(node('h2','Campeão — Histórico de competições'),node('p','Cadastre campeonatos da equipe e registre a participação e colocação individual de cada aluno.','status-line'));
+  const isAdmin=currentProfile&&currentProfile.role==='admin';
+  if(isAdmin){
+    const form=node('form',undefined,'activity-card');
+    form.append(node('h3','Cadastrar campeonato'));
+    const name=node('input',undefined,'search');name.required=true;name.maxLength=180;name.placeholder='Nome do campeonato';
+    const org=node('input',undefined,'search');org.placeholder='Organização / federação';org.maxLength=180;
+    const date=node('input',undefined,'search');date.type='date';
+    const city=node('input',undefined,'search');city.placeholder='Cidade';city.maxLength=100;
+    const state=node('input',undefined,'search');state.placeholder='Estado (UF)';state.maxLength=2;
+    const category=node('input',undefined,'search');category.placeholder='Categoria / divisão geral';category.maxLength=120;
+    const teamPlacement=node('input',undefined,'search');teamPlacement.placeholder='Colocação geral da equipe';teamPlacement.maxLength=120;
+    const notes=node('textarea',undefined,'search');notes.rows=2;notes.placeholder='Observações';notes.maxLength=2000;
+    const save=node('button','Cadastrar campeonato','btn btn-gold small-btn');save.type='submit';
+    const feedback=node('p','','status-line');
+    [name,org,date,city,state,category,teamPlacement,notes,save,feedback].forEach(x=>form.append(x));
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();save.disabled=true;
+      try{
+        const {error}=await supabaseClient.from('competitions').insert({name:name.value.trim(),organization:org.value.trim()||null,competition_date:date.value||null,city:city.value.trim()||null,state:state.value.trim().toUpperCase()||null,category:category.value.trim()||null,team_placement:teamPlacement.value.trim()||null,notes:notes.value.trim()||null,created_by:currentProfile.id});
+        if(error)throw error;form.reset();feedback.textContent='Campeonato cadastrado.';feedback.className='status-line success';await load();
+      }catch(err){feedback.textContent='Erro: '+(err.message||String(err));feedback.className='status-line error';}
+      finally{save.disabled=false;}
+    });
+    panel.append(form);
+  }
+  const list=node('div',undefined,'activity-grid');panel.append(list);content.append(panel);
+  async function load(){
+    list.replaceChildren();
+    const {data:events,error}=await supabaseClient.from('competitions').select('id,name,organization,competition_date,city,state,category,team_placement,notes').order('competition_date',{ascending:false});
+    if(error){list.append(node('p','Não foi possível carregar campeonatos: '+error.message,'status-line error'));return;}
+    const ids=(events||[]).map(x=>x.id);
+    const {data:entries}=ids.length?await supabaseClient.from('competition_participants').select('competition_id,student_id,division,belt,weight_category,modality,placement,medal,notes').in('competition_id',ids):{data:[]};
+    const studentsResult=isAdmin?await supabaseClient.from('students').select('id,full_name').order('full_name'): {data:[]};
+    (events||[]).forEach(event=>{
+      const card=node('article',undefined,'activity-card');
+      card.append(node('h3',event.name),node('p',[event.organization,fmtDate(event.competition_date),[event.city,event.state].filter(Boolean).join(' / ')].filter(Boolean).join(' • '),'status-line'));
+      if(event.category)card.append(node('p','Categoria: '+event.category));
+      if(event.team_placement)card.append(node('p','Resultado da equipe: '+event.team_placement));
+      const rows=(entries||[]).filter(x=>x.competition_id===event.id);
+      listRows(card,['Aluno','Categoria','Faixa','Peso','Modalidade','Colocação','Medalha'],rows.map(x=>[(studentsResult.data||[]).find(st=>st.id===x.student_id)?.full_name||'Aluno',x.division||'—',x.belt||'—',x.weight_category||'—',x.modality||'—',x.placement||'—',x.medal||'—']));
+      if(isAdmin){
+        const form=node('form',undefined,'activity-management');
+        const student=node('select',undefined,'search');student.required=true;student.append(node('option','Selecione o aluno'));student.options[0].value='';
+        (studentsResult.data||[]).forEach(st=>{const o=node('option',st.full_name);o.value=st.id;student.append(o);});
+        const division=node('input',undefined,'search');division.placeholder='Categoria';division.maxLength=120;
+        const belt=node('input',undefined,'search');belt.placeholder='Faixa';belt.maxLength=40;
+        const weight=node('input',undefined,'search');weight.placeholder='Categoria de peso';weight.maxLength=80;
+        const modality=node('select',undefined,'search');[['','Modalidade'],['Com kimono','Com kimono'],['Sem kimono','Sem kimono']].forEach(([v,l])=>{const o=node('option',l);o.value=v;modality.append(o);});
+        const placement=node('input',undefined,'search');placement.placeholder='Colocação (ex.: 1º lugar)';placement.maxLength=80;
+        const medal=node('select',undefined,'search');[['','Medalha'],['Ouro','Ouro'],['Prata','Prata'],['Bronze','Bronze'],['Sem medalha','Sem medalha']].forEach(([v,l])=>{const o=node('option',l);o.value=v;medal.append(o);});
+        const notes=node('input',undefined,'search');notes.placeholder='Observações';notes.maxLength=300;
+        const add=node('button','Registrar participante','btn btn-gold small-btn');add.type='submit';
+        const msg=node('p','','status-line');[student,division,belt,weight,modality,placement,medal,notes,add,msg].forEach(x=>form.append(x));card.append(form);
+        add.addEventListener('click',async e=>{
+          e.preventDefault();if(!student.value)return;add.disabled=true;
+          try{const {error}=await supabaseClient.from('competition_participants').upsert({competition_id:event.id,student_id:student.value,division:division.value.trim()||null,belt:belt.value.trim()||null,weight_category:weight.value.trim()||null,modality:modality.value||null,placement:placement.value.trim()||null,medal:medal.value||null,notes:notes.value.trim()||null},{onConflict:'competition_id,student_id'});if(error)throw error;msg.textContent='Participante registrado.';msg.className='status-line success';await load();}
+          catch(err){msg.textContent='Erro: '+(err.message||String(err));msg.className='status-line error';}finally{add.disabled=false;}
+        });
+      }
+      if(event.notes)card.append(node('p',event.notes,'status-line'));
+      list.append(card);
+    });
+    if(!(events||[]).length)list.append(node('p','Nenhum campeonato cadastrado.','status-line'));
+  }
+  await load();
 }
 
 async function getAuthorizedBiometricPhotoUrls(studentIds){
