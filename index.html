@@ -828,8 +828,11 @@ async function renderClassAttendance(content){
       if(enrollError)throw enrollError;
       const ids=[...new Set((enrollments||[]).map(x=>x.student_id).filter(Boolean))];
       if(!ids.length){status.textContent='Esta turma ainda não possui alunos ativos.';return;}
-      const {data:students,error:studentsError}=await supabaseClient.from('students').select('id,full_name,belt').in('id',ids).order('full_name');
+      const {data:students,error:studentsError}=await supabaseClient.from('students').select('id,full_name,belt,biometric_completed').in('id',ids).order('full_name');
       if(studentsError)throw studentsError;
+      let attendancePhotoUrls=new Map();
+      try{attendancePhotoUrls=await getAuthorizedBiometricPhotoUrls((students||[]).map(st=>st.id));}
+      catch(photoError){console.warn('Fotografias biométricas não carregadas na chamada.',photoError);}
       let {data:lessonRows,error:lessonError}=await supabaseClient.from('lessons').select('id').eq('class_id',classId).eq('lesson_date',lessonDate).order('created_at',{ascending:false}).limit(1);
       if(lessonError)throw lessonError;
       let lessonId=lessonRows&&lessonRows[0]?lessonRows[0].id:null;
@@ -903,7 +906,9 @@ async function renderClassAttendance(content){
       (students||[]).forEach(st=>{
         const card=node('article',undefined,'attendance-student-card');
         const initials=String(st.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
-        const avatar=node('div',initials||'AL','attendance-avatar');avatar.setAttribute('aria-label','Foto não cadastrada; iniciais do aluno');
+        const avatar=node('div',initials||'AL','attendance-avatar');avatar.style.position='relative';avatar.style.overflow='hidden';avatar.setAttribute('aria-label',attendancePhotoUrls.has(st.id)?'Fotografia biométrica do aluno':'Foto não cadastrada; iniciais do aluno');
+        const attendancePhotoUrl=attendancePhotoUrls.get(st.id);
+        if(attendancePhotoUrl&&st.biometric_completed){const photo=node('img');photo.src=attendancePhotoUrl;photo.alt='Foto biométrica de '+(st.full_name||'aluno');photo.loading='lazy';photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';photo.onerror=()=>photo.remove();avatar.append(photo);}
         const identity=node('div',undefined,'attendance-identity');
         identity.append(node('strong',st.full_name||'Aluno'),node('span','Faixa: '+(st.belt||'Não informada')));
         const top=node('div',undefined,'attendance-student-top');top.append(avatar,identity);
@@ -1239,8 +1244,10 @@ async function renderTechnicalProgress(content){
   const controls=node('div',undefined,'student-tools');
   const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Turma');
   const studentSelect=node('select',undefined,'search');studentSelect.setAttribute('aria-label','Aluno');
+  const studentPhotoPreview=node('div',undefined,'student-list-avatar');studentPhotoPreview.style.cssText='width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;overflow:hidden;position:relative';
+  studentPhotoPreview.setAttribute('aria-label','Foto do aluno selecionado');
   const date=node('input',undefined,'search');date.type='date';date.value=new Date().toISOString().slice(0,10);
-  controls.append(classSelect,studentSelect,date);
+  controls.append(classSelect,studentSelect,studentPhotoPreview,date);
   const evaluation=node('textarea',undefined,'search');evaluation.rows=4;evaluation.placeholder='Avaliação técnica: fundamentos, evolução, disciplina e pontos a desenvolver…';evaluation.style.width='100%';evaluation.style.marginTop='12px';
   const saveEvaluation=node('button','Salvar avaliação','btn btn-gold small-btn');saveEvaluation.type='button';saveEvaluation.style.marginTop='10px';
   const status=node('p','Carregando turmas autorizadas…','status-line');
@@ -1268,9 +1275,21 @@ async function renderTechnicalProgress(content){
       if(linkError)throw linkError;
       const ids=[...new Set((links||[]).map(x=>x.student_id).filter(Boolean))];
       if(!ids.length){status.textContent='Não há alunos ativos nesta turma.';return;}
-      const {data:students,error:studentError}=await supabaseClient.from('students').select('id,full_name').in('id',ids).order('full_name');
+      const {data:students,error:studentError}=await supabaseClient.from('students').select('id,full_name,biometric_completed').in('id',ids).order('full_name');
       if(studentError)throw studentError;
+      let technicalPhotoUrls=new Map();
+      try{technicalPhotoUrls=await getAuthorizedBiometricPhotoUrls((students||[]).map(st=>st.id));}
+      catch(photoError){console.warn('Fotografias biométricas não carregadas na avaliação.',photoError);}
       (students||[]).forEach(st=>{const o=node('option',st.full_name);o.value=st.id;studentSelect.append(o);});
+      function updateTechnicalStudentPhoto(){
+        studentPhotoPreview.replaceChildren();
+        const selectedStudent=(students||[]).find(st=>st.id===studentSelect.value);
+        if(!selectedStudent)return;
+        const photoUrl=technicalPhotoUrls.get(selectedStudent.id);
+        if(photoUrl&&selectedStudent.biometric_completed){const photo=node('img');photo.src=photoUrl;photo.alt='Foto biométrica de '+selectedStudent.full_name;photo.loading='lazy';photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';photo.onerror=()=>photo.remove();studentPhotoPreview.append(photo);}
+        else{const initials=String(selectedStudent.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();studentPhotoPreview.textContent=initials||'AL';}
+      }
+      updateTechnicalStudentPhoto();
       status.textContent=(students||[]).length+' aluno(s) disponíveis nesta turma.';
       await loadRecords();
     }
@@ -1289,7 +1308,7 @@ async function renderTechnicalProgress(content){
       if(!(evals||[]).length&&!(grads||[]).length)history.append(node('p','Ainda não há registros técnicos para exibir.','status-line'));
     }
     classSelect.addEventListener('change',()=>loadStudents().catch(e=>status.textContent='Erro ao carregar alunos: '+e.message));
-    studentSelect.addEventListener('change',()=>loadRecords().catch(e=>status.textContent='Erro ao carregar registros: '+e.message));
+    studentSelect.addEventListener('change',()=>{const selectedOption=studentSelect.value;const current=studentPhotoPreview.querySelector('img');if(current)current.remove();const selectedText=studentSelect.options[studentSelect.selectedIndex]?.textContent||'';const selectedStudentId=studentSelect.value;const selectedPhoto=technicalPhotoUrls.get(selectedStudentId);if(selectedPhoto){const photo=node('img');photo.src=selectedPhoto;photo.alt='Foto biométrica de '+selectedText;photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';studentPhotoPreview.append(photo);}else{studentPhotoPreview.textContent=selectedText.trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'AL';}loadRecords().catch(e=>status.textContent='Erro ao carregar registros: '+e.message);});
     saveEvaluation.addEventListener('click',async()=>{
       if(!studentSelect.value||!evaluation.value.trim()){status.textContent='Selecione o aluno e preencha a avaliação técnica.';return;}
       saveEvaluation.disabled=true;
@@ -1484,6 +1503,27 @@ async function renderActivities(content){
   await loadActivities();
 }
 
+async function getAuthorizedBiometricPhotoUrls(studentIds){
+  const photoUrls=new Map();
+  const uniqueIds=[...new Set((studentIds||[]).filter(Boolean))];
+  if(!uniqueIds.length)return photoUrls;
+  const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
+  if(sessionError||!session?.access_token)throw new Error('Sessão expirada ao consultar as fotografias.');
+  for(let offset=0;offset<uniqueIds.length;offset+=150){
+    const response=await fetch(SUPABASE_URL+'/functions/v1/student-biometric-photos',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({student_ids:uniqueIds.slice(offset,offset+150)})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Não foi possível carregar as fotografias biométricas autorizadas.');
+    (result.photos||[]).forEach(photo=>{
+      if(photo.student_id&&photo.url)photoUrls.set(photo.student_id,photo.url);
+    });
+  }
+  return photoUrls;
+}
+
 async function renderStudents(content){
   const panel=node('div',undefined,'dash-panel');
   panel.append(node('h2','Gestão de alunos'),node('p','Pesquisa e exportação da lista básica. Esta versão consulta somente nome, faixa, data de matrícula e identificador; dados de saúde e contatos pessoais não são carregados.','status-line'));
@@ -1501,19 +1541,9 @@ async function renderStudents(content){
     const {data,error}=await supabaseClient.from('students').select('id,full_name,belt,enrollment_date,source_row_number,biometric_completed').order('full_name',{ascending:true}).limit(1000);
     if(error)throw error;
     studentsCache=Array.isArray(data)?data:[];
-    const studentPhotoUrls=new Map();
+    let studentPhotoUrls=new Map();
     try{
-      const studentIds=studentsCache.map(s=>s.id).filter(Boolean);
-      if(studentIds.length){
-        const {data:photoRecords,error:photoError}=await supabaseClient.from('enrollment_submissions').select('student_id,facial_image_storage_path').eq('facial_biometrics_consent',true).not('facial_image_storage_path','is',null).in('student_id',studentIds);
-        if(!photoError&&Array.isArray(photoRecords)){
-          for(const photoRecord of photoRecords){
-            if(!photoRecord.student_id||!photoRecord.facial_image_storage_path)continue;
-            const {data:signedPhoto,error:signedPhotoError}=await supabaseClient.storage.from('biometria-facial').createSignedUrl(photoRecord.facial_image_storage_path,3600);
-            if(!signedPhotoError&&signedPhoto?.signedUrl)studentPhotoUrls.set(photoRecord.student_id,signedPhoto.signedUrl);
-          }
-        }
-      }
+      studentPhotoUrls=await getAuthorizedBiometricPhotoUrls(studentsCache.map(s=>s.id));
     }catch(photoLoadError){console.warn('As fotos de perfil não puderam ser carregadas; os círculos de identificação serão mantidos.',photoLoadError);}
     function filteredRows(){const q=search.value.trim().toLocaleLowerCase('pt-BR'),belt=beltFilter.value;return studentsCache.filter(s=>(!q||String(s.full_name??'').toLocaleLowerCase('pt-BR').includes(q))&&(!belt||String(s.belt??'').toLocaleLowerCase('pt-BR')===belt.toLocaleLowerCase('pt-BR')));}
     function csvEscape(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
