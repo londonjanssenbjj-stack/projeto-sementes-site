@@ -1596,7 +1596,7 @@ async function renderActivities(content){
       ].sort((a,b)=>String(b._date||'').localeCompare(String(a._date||'')));
       const [studentResult,participationResult]=isAdmin?await Promise.all([
         supabaseClient.from('students').select('id,full_name').order('full_name'),
-        supabaseClient.from('activity_participations').select('student_id,lecture_id,social_action_id,participated')
+        supabaseClient.from('activity_participations').select('id,student_id,lecture_id,social_action_id,participated')
       ]):[{data:[]},{data:[]}];
       items.forEach(item=>{
         const card=node('article',undefined,'activity-card');
