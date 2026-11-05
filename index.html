@@ -754,7 +754,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     const names=new Map(children.map(x=>[x.id,x.full_name]));
     const totals=new Map();(rows||[]).forEach(x=>{const t=totals.get(x.student_id)||{present:0,absent:0,excused:0,total:0};t.total++;if(x.status==='present')t.present++;else if(x.status==='absent')t.absent++;else if(x.status==='excused')t.excused++;totals.set(x.student_id,t);});
     listRows(box,['Aluno','Aulas lançadas','Presenças','Faltas','Justificadas','Frequência'],children.map(ch=>{const t=totals.get(ch.id)||{present:0,absent:0,excused:0,total:0};return[ch.full_name,t.total,t.present,t.absent,t.excused,t.total?Math.round(t.present/t.total*100)+'%':'—'];}));
-    listRows(box,['Aluno','Data da aula','Situação'],(rows||[]).slice(0,100).map(x=>[names.get(x.student_id)||'Aluno',fmtDate(lessonMap.get(x.lesson_id)?.lesson_date),({present:'Presente',absent:'Falta',excused:'Justificada'}[x.status]||x.status)]));
+    listRows(box,['Aluno','Data da aula','Situação'],(rows||[]).slice().sort((a,b)=>String(lessonMap.get(b.lesson_id)?.lesson_date||'').localeCompare(String(lessonMap.get(a.lesson_id)?.lesson_date||''))).slice(0,100).map(x=>[names.get(x.student_id)||'Aluno',fmtDate(lessonMap.get(x.lesson_id)?.lesson_date),({present:'Presente',absent:'Falta',excused:'Justificada'}[x.status]||x.status)]));
     return;
   }
   if(view==='guardian-evaluation'){
