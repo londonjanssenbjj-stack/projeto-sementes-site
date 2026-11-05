@@ -747,7 +747,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
   if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
 
-  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
+  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,health_history,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
   if(healthError)console.warn('Histórico de saúde indisponível para esta conta:',healthError.message);
   const healthByStudent=new Map((healthRecords||[]).map(x=>[x.student_id,x]));
   const familyTitle=node('h2','Acompanhamento familiar');
