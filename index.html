@@ -706,6 +706,7 @@ function appendStudentHealthInfo(container,record,student){
   const box=node('section',undefined,'status-line');
   box.style.cssText='margin-top:12px;padding:14px;border:1px solid #e4e0d6;border-left:3px solid #d9b64b;border-radius:6px;background:#fff';
   box.append(node('strong','Histórico de saúde e cuidados'));
+  if(record?.health_history!==null&&record?.health_history!==undefined&&String(record.health_history).trim()!=='')box.append(node('p','Histórico informado: '+record.health_history,'status-line'));
   const raw=record?.care_instructions;
   let answers={};
   if(raw){try{answers=typeof raw==='string'?JSON.parse(raw):raw;}catch(_){answers={observacoes:raw};}}
@@ -742,7 +743,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   if(childrenError){panel.append(node('p','O vínculo foi localizado, mas a leitura dos dados autorizados foi bloqueada pelas políticas RLS de students. Detalhe: '+childrenError.message,'status-line'));return;}
   if(!children||!children.length){panel.append(node('p','Não há dados de alunos disponíveis para esta conta. A Secretaria deve conferir o vínculo e as permissões.','status-line'));return;}
 
-  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
+  const {data:healthRecords,error:healthError}=await supabaseClient.from('student_health_records').select('student_id,health_history,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
   if(healthError)console.warn('Histórico de saúde indisponível para esta conta:',healthError.message);
   const healthByStudent=new Map((healthRecords||[]).map(x=>[x.student_id,x]));
   const familyTitle=node('h2','Acompanhamento familiar');
@@ -1003,7 +1004,7 @@ async function renderClassAttendance(content){
       const ids=[...new Set((enrollments||[]).map(x=>x.student_id).filter(Boolean))];
       if(!ids.length){status.textContent='Esta turma ainda não possui alunos ativos.';return;}
       const {data:students,error:studentsError}=await supabaseClient.from('students').select('id,full_name,belt,biometric_completed').in('id',ids).order('full_name');
-      const {data:healthRows,error:healthRowsError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
+      const {data:healthRows,error:healthRowsError}=await supabaseClient.from('student_health_records').select('student_id,health_history,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').in('student_id',ids);
       if(healthRowsError)throw healthRowsError;
       const healthByStudent=new Map((healthRows||[]).map(x=>[x.student_id,x]));
       if(studentsError)throw studentsError;
@@ -1862,7 +1863,7 @@ async function openStudentFicha(id){
     studentFields.forEach(k=>{const el=$('st_'+k);if(el)el.value=k==='biometric_completed'?String(!!data[k]):(data[k]??'');});
     $('studentDetailMeta').textContent='Registro nº '+(data.source_row_number??'—')+' • Última atualização: '+(data.updated_at?new Date(data.updated_at).toLocaleString('pt-BR'):'não informada');
     const historyBox=$('studentHistory');historyBox.replaceChildren(node('h3','Histórico técnico e de graduação'));
-    const {data:healthRecord,error:healthRecordError}=await supabaseClient.from('student_health_records').select('student_id,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').eq('student_id',id).maybeSingle();
+    const {data:healthRecord,error:healthRecordError}=await supabaseClient.from('student_health_records').select('student_id,health_history,relevant_allergies,practice_restrictions,care_instructions,emergency_contact_name,emergency_contact_phone,guardian_confirmed_at,updated_at').eq('student_id',id).maybeSingle();
     if(healthRecordError)throw healthRecordError;
     appendStudentHealthInfo(historyBox,healthRecord,data);
     try{
