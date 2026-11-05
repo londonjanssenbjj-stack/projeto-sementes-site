@@ -826,8 +826,9 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     const attendanceTotals=new Map();
     (attendanceResult.data||[]).forEach(x=>{const t=attendanceTotals.get(x.student_id)||{present:0,total:0};t.total++;if(x.status==='present')t.present++;attendanceTotals.set(x.student_id,t);});
     const avgFrequency=children.length?Math.round(children.reduce((sum,ch)=>{const t=attendanceTotals.get(ch.id);return sum+(t&&t.total?t.present/t.total*100:0);},0)/children.length):0;
+    const pendingStudents=children.filter(x=>!x.biometric_completed);
     const kpis=node('div',undefined,'kpis');
-    kpis.append(makeKpi('Alunos vinculados',children.length),makeKpi('Frequência média',avgFrequency+'%'),makeKpi('Biometrias concluídas',children.filter(x=>x.biometric_completed).length),makeKpi('Biometrias pendentes',children.filter(x=>!x.biometric_completed).length));
+    kpis.append(makeKpi('Alunos vinculados',children.length),makeKpi('Frequência média',avgFrequency+'%'),makeKpi('Biometrias concluídas',children.filter(x=>x.biometric_completed).length),makeKpi('Pendências',pendingStudents.length));
     box.append(kpis);
     const photoUrls=await getAuthorizedBiometricPhotoUrls(ids).catch(()=>new Map());
     const classIds=[...new Set((enrollmentResult.data||[]).map(x=>x.class_id).filter(Boolean))];
@@ -837,7 +838,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       const c=node('details',undefined,'activity-card');c.style.cssText='padding:14px';
       const header=node('summary',undefined,'student-tools');header.style.cssText='display:flex;align-items:center;gap:14px;flex-wrap:wrap;cursor:pointer';
       const photoUrl=photoUrls.get(ch.id);
-      if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(ch.full_name||'aluno');img.loading='lazy';img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:50%';header.append(img);}
+      if(photoUrl){const img=document.createElement('img');img.src=photoUrl;img.alt='Foto de '+(ch.full_name||'aluno');img.loading='lazy';img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:50%';header.append(img);}else{const photoMissing=node('span','Foto não cadastrada','status-line');photoMissing.style.cssText='width:64px;height:64px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed #c9c9c9;border-radius:50%;font-size:10px';header.append(photoMissing);}
       const identity=node('div');identity.append(node('h3',ch.full_name||'Aluno'),node('p','Faixa: '+(ch.belt||'Não informada')+' • Turma: '+((enrollmentResult.data||[]).filter(x=>x.student_id===ch.id).map(x=>classNames.get(x.class_id)).filter(Boolean).join(', ')||'Não informada'),'status-line'));header.append(identity);c.append(header);
       const t=attendanceTotals.get(ch.id)||{present:0,total:0};
       const evaluation=(evaluationResult.data||[]).find(x=>x.student_id===ch.id);
@@ -848,16 +849,19 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       const bioBadge=node('p',ch.biometric_completed?'Biometria facial concluída':'Biometria facial pendente','status-line');bioBadge.style.fontWeight='700';bioBadge.style.color=ch.biometric_completed?'#16803c':'#9a6b00';c.append(bioBadge);
       const studentActivities=(activityHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
       const studentCompetitions=(competitionHistoryResult.data||[]).filter(x=>x.student_id===ch.id);
-      const history=node('div',undefined,'status-line');history.append(node('strong','Histórico de atividades e competições'));
-      studentActivities.forEach(x=>{const item=x.lecture_id?(historyLectures.data||[]).find(v=>v.id===x.lecture_id):(historyActions.data||[]).find(v=>v.id===x.social_action_id);if(item)history.append(node('p',(item.title||item.topic||'Atividade')+' • '+fmtDate(x.lecture_id?String(item.scheduled_at||'').slice(0,10):item.action_date)+' • Participou'));});
-      studentCompetitions.forEach(x=>{const item=(historyCompetitions.data||[]).find(v=>v.id===x.competition_id);if(item)history.append(node('p',(item.name||'Campeonato')+' • '+fmtDate(item.competition_date)+' • '+(x.placement||x.medal||'Participante')));});
-      (graduationResult.data||[]).filter(x=>x.student_id===ch.id).forEach(x=>history.append(node('p','Graduação: '+(x.belt||'Faixa não informada')+' • '+fmtDate(x.awarded_on))));
-      (evaluationResult.data||[]).filter(x=>x.student_id===ch.id).forEach(x=>history.append(node('p','Avaliação técnica • '+fmtDate(x.evaluated_on)+' • '+(x.evaluation||'Registro realizado'))));
-      if(!studentActivities.length&&!studentCompetitions.length&&!(graduationResult.data||[]).some(x=>x.student_id===ch.id)&&!(evaluationResult.data||[]).some(x=>x.student_id===ch.id))history.append(node('p','Nenhuma evolução ou participação registrada.'));
+      const timeline=[];
+      if(ch.enrollment_date)timeline.push({date:ch.enrollment_date,title:'Entrada no projeto',detail:'Matrícula registrada'});
+      studentActivities.forEach(x=>{const item=x.lecture_id?(historyLectures.data||[]).find(v=>v.id===x.lecture_id):(historyActions.data||[]).find(v=>v.id===x.social_action_id);if(item){const date=x.lecture_id?String(item.scheduled_at||'').slice(0,10):item.action_date;timeline.push({date,title:item.title||item.topic||'Atividade',detail:'Participação registrada'});}});
+      studentCompetitions.forEach(x=>{const item=(historyCompetitions.data||[]).find(v=>v.id===x.competition_id);if(item)timeline.push({date:item.competition_date,title:item.name||'Campeonato',detail:x.placement||x.medal||'Participação registrada'});});
+      (graduationResult.data||[]).filter(x=>x.student_id===ch.id).forEach(x=>timeline.push({date:x.awarded_on,title:'Graduação — '+(x.belt||'Faixa não informada'),detail:x.degrees||'Graduação registrada'}));
+      (evaluationResult.data||[]).filter(x=>x.student_id===ch.id).forEach(x=>timeline.push({date:x.evaluated_on,title:'Avaliação do professor',detail:x.evaluation||'Avaliação registrada'}));
+      timeline.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+      const history=node('div',undefined,'status-line');history.append(node('strong','Linha do tempo de evolução'));
+      if(timeline.length)timeline.forEach(item=>{const entry=node('p',fmtDate(item.date)+' • '+item.title+' — '+item.detail,'history-item');entry.style.cssText='margin:9px 0;padding:8px 10px;border-left:3px solid #d9b64b;background:#faf9f6';history.append(entry);});
+      else history.append(node('p','Nenhum marco de evolução registrado.'));
       c.append(history);box.append(c);
     });
-    const alerts=children.filter(x=>!x.biometric_completed);
-    if(alerts.length){const alertBox=section('Avisos importantes','Pendências que precisam da atenção do responsável.');alerts.forEach(ch=>alertBox.append(node('p','Biometria facial pendente: '+ch.full_name,'status-line')));}
+    if(pendingStudents.length){const alertBox=section('Pendências que precisam de atenção','Biometrias ainda não concluídas nos cadastros vinculados.');pendingStudents.forEach(ch=>alertBox.append(node('p','Biometria facial pendente: '+ch.full_name,'status-line')));}
     const activityBox=section('Próximas atividades','Eventos e atividades divulgados pelo Projeto Sementes.');
     const [lectures,actions]=await Promise.all([
       supabaseClient.from('lectures').select('title,topic,scheduled_at,location,status').order('scheduled_at',{ascending:true}).limit(5),
@@ -870,37 +874,51 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   }
   if(view==='guardian-attendance'){
     const box=section('Frequência','Presenças e faltas registradas para seus alunos.');
-    const {data:lessons,error:le}=await supabaseClient.from('lessons').select('id,lesson_date,topic').order('lesson_date',{ascending:false});
+    const {data:lessons,error:le}=await supabaseClient.from('lessons').select('id,class_id,lesson_date,topic,status').order('lesson_date',{ascending:false});
     if(le){box.append(node('p','Não foi possível carregar as aulas: '+le.message,'status-line error'));return;}
     const lessonMap=new Map((lessons||[]).map(x=>[x.id,x]));
+    const {data:calendarEnrollments,error:calendarEnrollmentError}=await supabaseClient.from('class_enrollments').select('student_id,class_id').in('student_id',ids).eq('active',true);
+    if(calendarEnrollmentError){box.append(node('p','Não foi possível identificar as turmas dos alunos: '+calendarEnrollmentError.message,'status-line error'));return;}
     const {data:rows,error:ae}=await supabaseClient.from('attendance').select('student_id,lesson_id,status').in('student_id',ids).order('recorded_at',{ascending:false}).limit(500);
     if(ae){box.append(node('p','Não foi possível carregar a frequência: '+ae.message,'status-line error'));return;}
     const names=new Map(children.map(x=>[x.id,x.full_name]));
     const totals=new Map();(rows||[]).forEach(x=>{const t=totals.get(x.student_id)||{present:0,absent:0,excused:0,total:0};t.total++;if(x.status==='present')t.present++;else if(x.status==='absent')t.absent++;else if(x.status==='excused')t.excused++;totals.set(x.student_id,t);});
     listRows(box,['Aluno','Aulas lançadas','Presenças','Faltas','Justificadas','Frequência'],children.map(ch=>{const t=totals.get(ch.id)||{present:0,absent:0,excused:0,total:0};return[ch.full_name,t.total,t.present,t.absent,t.excused,t.total?Math.round(t.present/t.total*100)+'%':'—'];}));
-    const orderedRows=(rows||[]).slice().sort((a,b)=>String(lessonMap.get(b.lesson_id)?.lesson_date||'').localeCompare(String(lessonMap.get(a.lesson_id)?.lesson_date||''))).slice(0,100);
-    const nowCalendar=new Date(),calendarYear=nowCalendar.getFullYear(),calendarMonth=nowCalendar.getMonth();
-    const calendarBox=section('Calendário mensal de frequência','Acompanhe as chamadas registradas no mês atual.');
-    const legend=node('p','Legenda: Presente • Falta • Justificada • Sem chamada registrada','status-line');calendarBox.append(legend);
-    children.forEach(ch=>{
-      const studentRows=orderedRows.filter(x=>x.student_id===ch.id);
-      const monthCard=node('article',undefined,'activity-card');monthCard.append(node('h3',ch.full_name||'Aluno'));
-      const monthTitle=node('p',new Date(calendarYear,calendarMonth,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),'status-line');monthTitle.style.fontWeight='700';monthCard.append(monthTitle);
-      const grid=node('div');grid.style.cssText='display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center';
-      ['D','S','T','Q','Q','S','S'].forEach(d=>{const cell=node('div',d,'status-line');cell.style.fontWeight='800';grid.append(cell);});
-      const firstDay=new Date(calendarYear,calendarMonth,1).getDay(),daysInMonth=new Date(calendarYear,calendarMonth+1,0).getDate();
-      for(let pad=0;pad<firstDay;pad++){const blank=node('div','');grid.append(blank);}
-      for(let day=1;day<=daysInMonth;day++){
-        const dateKey=calendarYear+'-'+String(calendarMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-        const marks=studentRows.filter(x=>String(lessonMap.get(x.lesson_id)?.lesson_date||'').slice(0,10)===dateKey);
-        const cell=node('div',String(day));
-        const status=marks.some(x=>x.status==='present')?'present':marks.some(x=>x.status==='absent')?'absent':marks.some(x=>x.status==='excused')?'excused':'none';
-        const colors={present:['#e7f5eb','#176b35'],absent:['#fdecec','#a12626'],excused:['#fff5d8','#8a6200'],none:['#f2f3f5','#657080']};
-        cell.style.cssText='padding:7px 2px;border-radius:5px;background:'+colors[status][0]+';color:'+colors[status][1]+';font-size:12px;font-weight:700;min-height:32px';
-        cell.title=marks.length?marks.map(x=>({present:'Presente',absent:'Falta',excused:'Justificada'}[x.status]||x.status)).join(', '):'Sem chamada registrada';grid.append(cell);
-      }
-      monthCard.append(grid);calendarBox.append(monthCard);
-    });
+    const orderedRows=(rows||[]).slice().sort((a,b)=>String(lessonMap.get(b.lesson_id)?.lesson_date||'').localeCompare(String(lessonMap.get(a.lesson_id)?.lesson_date||'')));
+    const calendarBox=section('Calendário mensal de frequência','Verde: presente • Vermelho: falta • Cinza: sem aula • Amarelo: chamada pendente.');
+    let calendarCursor=new Date();calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1);
+    const calendarControls=node('div');calendarControls.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 14px';
+    const previousMonth=node('button','‹ Mês anterior','btn btn-outline small-btn');previousMonth.type='button';
+    const nextMonth=node('button','Próximo mês ›','btn btn-outline small-btn');nextMonth.type='button';
+    const monthLabel=node('strong','');calendarControls.append(previousMonth,monthLabel,nextMonth);calendarBox.append(calendarControls);
+    const calendarContent=node('div');calendarBox.append(calendarContent);
+    const renderMonth=()=>{
+      calendarContent.replaceChildren();monthLabel.textContent=calendarCursor.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+      const year=calendarCursor.getFullYear(),month=calendarCursor.getMonth();
+      children.forEach(ch=>{
+        const studentRows=orderedRows.filter(x=>x.student_id===ch.id);
+        const studentClassIds=(calendarEnrollments||[]).filter(x=>x.student_id===ch.id).map(x=>x.class_id);
+        const monthCard=node('article',undefined,'activity-card');monthCard.append(node('h3',ch.full_name||'Aluno'));
+        const grid=node('div');grid.style.cssText='display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center';
+        ['D','S','T','Q','Q','S','S'].forEach(d=>{const cell=node('div',d,'status-line');cell.style.fontWeight='800';grid.append(cell);});
+        const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate();
+        for(let pad=0;pad<firstDay;pad++)grid.append(node('div',''));
+        for(let day=1;day<=daysInMonth;day++){
+          const dateKey=year+'-'+String(month+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+          const scheduled=(lessons||[]).filter(x=>x.lesson_date===dateKey&&studentClassIds.includes(x.class_id));
+          const marks=studentRows.filter(x=>scheduled.some(l=>l.id===x.lesson_id));
+          const cell=node('div',String(day));
+          const status=marks.some(x=>x.status==='present')?'present':marks.some(x=>x.status==='absent')?'absent':marks.some(x=>x.status==='excused')?'excused':scheduled.length?'pending':'none';
+          const colors={present:['#e7f5eb','#176b35'],absent:['#fdecec','#a12626'],excused:['#fff5d8','#8a6200'],pending:['#fff0c2','#8a6200'],none:['#f2f3f5','#657080']};
+          cell.style.cssText='padding:7px 2px;border-radius:5px;background:'+colors[status][0]+';color:'+colors[status][1]+';font-size:12px;font-weight:700;min-height:32px';
+          cell.title=({present:'Presente',absent:'Falta',excused:'Falta justificada',pending:'Aula cadastrada; chamada pendente',none:'Sem aula cadastrada para esta data'})[status];grid.append(cell);
+        }
+        monthCard.append(grid);calendarContent.append(monthCard);
+      });
+    };
+    previousMonth.addEventListener('click',()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderMonth();});
+    nextMonth.addEventListener('click',()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderMonth();});
+    renderMonth();
     children.forEach(ch=>{
       const studentRows=orderedRows.filter(x=>x.student_id===ch.id);
       const studentBox=node('article',undefined,'activity-card');
@@ -919,7 +937,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
   if(view==='guardian-documents'){
     const box=section('Documentos e autorizações','Consulta dos documentos de matrícula disponibilizados para os alunos vinculados à sua conta.');
     const {data:submissions,error}=await supabaseClient.from('enrollment_submissions').select('student_id,protocol,signed_at,pdf_storage_path,signature_storage_path').in('student_id',ids).order('created_at',{ascending:false}).limit(100);
-    if(error){box.append(node('p','Não foi possível consultar os documentos autorizados. A Secretaria pode verificar a disponibilidade.','status-line'));return;}
+    if(error){box.append(node('p','A consulta de fichas e autorizações está restrita pela política de acesso atual do Supabase ao perfil da Administração. Para proteger os dados, esta Área da Família não tenta contornar essa permissão. Nenhuma política RLS foi alterada. Detalhe: '+error.message,'status-line error'));return;}
     const latestByStudent=new Map();(submissions||[]).forEach(x=>{if(!latestByStudent.has(x.student_id))latestByStudent.set(x.student_id,x);});
     for(const child of children){
       const doc=latestByStudent.get(child.id),card=node('article',undefined,'activity-card');card.append(node('h3',child.full_name||'Aluno'));
@@ -972,6 +990,10 @@ async function renderGuardianFamily(content,view='guardian-overview'){
       mine.forEach(p=>{const student=studentList.find(x=>x.id===p.student_id);if(student)card.append(node('p',(student.full_name||'Aluno')+' — Participou','status-line'));});
       box.append(card);
     });
+    const noticeItems=[...(lectures.data||[]).map(x=>({type:'Comunicado / palestra',title:x.title||x.topic,date:String(x.scheduled_at||'').slice(0,10),location:x.location,detail:x.speaker,status:x.status})),...(actions.data||[]).map(x=>({type:'Atividade / ação social',title:x.title,date:x.action_date,location:x.location,detail:x.description,status:x.status}))].filter(x=>x.date&&x.date>=new Date().toISOString().slice(0,10)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const noticeBox=section('Mural de comunicados','Avisos, palestras, eventos e atividades cadastrados pela equipe.');
+    if(noticeItems.length)noticeItems.forEach(item=>{const notice=node('article',undefined,'activity-card');notice.append(node('h3',item.title||item.type),node('p',item.type+' • '+fmtDate(item.date)+' • '+(item.location||'Local não informado'),'status-line'));if(item.detail)notice.append(node('p',item.detail,'status-line'));if(item.status)notice.append(node('p','Situação: '+item.status,'status-line'));noticeBox.append(notice);});
+    else noticeBox.append(node('p','Não há comunicados ou atividades futuras cadastradas.','status-line'));
     if(!box.querySelector('.activity-card'))box.append(node('p','Nenhuma participação em atividade foi registrada para seus alunos.','status-line'));
     return;
   }
