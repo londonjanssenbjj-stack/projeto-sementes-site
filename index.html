@@ -2036,11 +2036,13 @@ async function renderStudents(content){
   const search=node('input',undefined,'search');search.type='search';search.placeholder='Pesquisar pelo nome…';search.setAttribute('aria-label','Pesquisar alunos pelo nome');
   const beltFilter=node('select',undefined,'search');beltFilter.setAttribute('aria-label','Filtrar por faixa');
   [['','Todas as faixas'],['Branca','Branca'],['Cinza','Cinza'],['Amarela','Amarela'],['Laranja','Laranja'],['Verde','Verde'],['Azul','Azul'],['Roxa','Roxa'],['Marrom','Marrom'],['Preta','Preta']].forEach(([v,t])=>{const o=node('option',t);o.value=v;beltFilter.append(o);});
+  const bioFilter=node('select',undefined,'search');bioFilter.setAttribute('aria-label','Filtrar alunos por situação da biometria');
+  [['','Todas as biometrias'],['completed','Biometria concluída'],['pending','Biometria pendente']].forEach(([v,t])=>{const o=node('option',t);o.value=v;bioFilter.append(o);});
   const exportBtn=node('button','Exportar CSV','btn btn-gold small-btn');exportBtn.type='button';
-  tools.append(search,beltFilter,exportBtn);
+  tools.append(search,beltFilter,bioFilter,exportBtn);
   const summary=node('div',undefined,'student-summary');
-  const totalBox=node('div'),beltBox=node('div'),bioBox=node('div');
-  totalBox.append(node('strong','—'),node('span','Alunos ativos'));beltBox.append(node('strong','—'),node('span','Faixas distintas'));bioBox.append(node('strong','—'),node('span','Biometrias pendentes'));summary.append(totalBox,beltBox,bioBox);
+  const totalBox=node('div'),beltBox=node('div'),bioDoneBox=node('div'),bioPendingBox=node('div');
+  totalBox.append(node('strong','—'),node('span','Alunos ativos'));beltBox.append(node('strong','—'),node('span','Faixas distintas'));bioDoneBox.append(node('strong','—'),node('span','Biometrias concluídas'));bioPendingBox.append(node('strong','—'),node('span','Biometrias pendentes'));summary.append(totalBox,beltBox,bioDoneBox,bioPendingBox);
   const status=node('div','Consultando banco de dados…','status-line');const tableWrap=node('div',undefined,'table-wrap');panel.append(tools,summary,status,tableWrap);content.append(panel);
   try{
     const {data,error}=await supabaseClient.from('students').select('id,full_name,belt,enrollment_date,source_row_number,biometric_completed').order('full_name',{ascending:true}).limit(1000);
@@ -2050,7 +2052,7 @@ async function renderStudents(content){
     try{
       studentPhotoUrls=await getAuthorizedBiometricPhotoUrls(studentsCache.map(s=>s.id));
     }catch(photoLoadError){console.warn('As fotos de perfil não puderam ser carregadas; os círculos de identificação serão mantidos.',photoLoadError);}
-    function filteredRows(){const q=search.value.trim().toLocaleLowerCase('pt-BR'),belt=beltFilter.value;return studentsCache.filter(s=>(!q||String(s.full_name??'').toLocaleLowerCase('pt-BR').includes(q))&&(!belt||String(s.belt??'').toLocaleLowerCase('pt-BR')===belt.toLocaleLowerCase('pt-BR')));}
+    function filteredRows(){const q=search.value.trim().toLocaleLowerCase('pt-BR'),belt=beltFilter.value,bio=bioFilter.value;return studentsCache.filter(s=>(!q||String(s.full_name??'').toLocaleLowerCase('pt-BR').includes(q))&&(!belt||String(s.belt??'').toLocaleLowerCase('pt-BR')===belt.toLocaleLowerCase('pt-BR'))&&(!bio||(bio==='completed'?s.biometric_completed===true:s.biometric_completed!==true)));}
     function csvEscape(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
     exportBtn.addEventListener('click',()=>{
       const rows=filteredRows();const lines=[['Nome do aluno','Faixa','Data de matrícula','Biometria','Identificador'],...rows.map(s=>[s.full_name,s.belt,s.enrollment_date,s.biometric_completed?'Concluída':'Pendente',s.source_row_number??s.id])];
@@ -2058,14 +2060,14 @@ async function renderStudents(content){
     });
     function draw(){
       const rows=filteredRows();const belts=new Set(studentsCache.map(s=>s.belt).filter(Boolean));
-      totalBox.querySelector('strong').textContent=String(studentsCache.length);beltBox.querySelector('strong').textContent=String(belts.size);bioBox.querySelector('strong').textContent=String(studentsCache.filter(s=>!s.biometric_completed).length);
+      totalBox.querySelector('strong').textContent=String(studentsCache.length);beltBox.querySelector('strong').textContent=String(belts.size);bioDoneBox.querySelector('strong').textContent=String(studentsCache.filter(s=>s.biometric_completed===true).length);bioPendingBox.querySelector('strong').textContent=String(studentsCache.filter(s=>s.biometric_completed!==true).length);
       status.textContent='Dados recebidos do Supabase: '+studentsCache.length+' registros. Use a pesquisa ou o filtro e exporte a lista quando necessário.';
       tableWrap.replaceChildren();
       if(!rows.length){tableWrap.append(node('div','Nenhum aluno encontrado para os filtros selecionados.','empty'));return;}
       const table=node('table'),thead=node('thead'),hr=node('tr');['Nome do aluno','Faixa','Data de matrícula','Biometria','Nº de origem','Ficha'].forEach(t=>hr.append(node('th',t)));thead.append(hr);table.append(thead);const tbody=node('tbody');
       rows.forEach(s=>{const tr=node('tr');const nameCell=node('td');const nameWrap=node('div',undefined,'student-name-cell');const initials=String(s.full_name||'Aluno').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();const avatar=node('div',initials||'AL','student-list-avatar');avatar.setAttribute('aria-label',studentPhotoUrls.has(s.id)?'Fotografia autorizada do aluno':'Foto não cadastrada; identificação reservada');const photoUrl=studentPhotoUrls.get(s.id);if(photoUrl){const photo=node('img');photo.src=photoUrl;photo.alt='Foto do aluno';photo.loading='lazy';photo.onerror=()=>{photo.remove();};avatar.append(photo);}nameWrap.append(avatar,node('span',String(s.full_name??'—')));nameCell.append(nameWrap);tr.append(nameCell,node('td',String(s.belt??'—')),node('td',String(s.enrollment_date??'—')),node('td',s.biometric_completed?'Concluída':'Pendente'),node('td',String(s.source_row_number??'—')));const td=node('td');const open=node('button','Abrir ficha','student-row-btn');open.type='button';open.addEventListener('click',()=>openStudentFicha(s.id));td.append(open);tr.append(td);tbody.append(tr);});table.append(tbody);tableWrap.append(table);
     }
-    draw();search.addEventListener('input',draw);beltFilter.addEventListener('change',draw);
+    draw();search.addEventListener('input',draw);beltFilter.addEventListener('change',draw);bioFilter.addEventListener('change',draw);
   }catch(err){status.remove();summary.remove();tools.remove();tableWrap.append(node('div','Não foi possível carregar a lista de alunos.','error-box'),node('p','A consulta depende das permissões RLS e dos nomes das colunas da tabela students. Mensagem retornada: '+(err.message||String(err)),'status-line'));}
 }
 
