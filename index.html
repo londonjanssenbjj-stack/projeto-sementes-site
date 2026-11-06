@@ -1178,7 +1178,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
           const response=await fetch(SUPABASE_URL+'/functions/v1/capture-student-face',{
             method:'POST',
             headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},
-            body:JSON.stringify({student_id:child.id,image:jpeg,turnstile_token:token})
+            body:JSON.stringify({student_id:child.id,image:jpeg,turnstile_token:token,facial_consent_confirmed:consent.checked})
           });
           const result=await response.json().catch(()=>({}));
           if(!response.ok)throw new Error(result.error||'O servidor não confirmou o armazenamento da foto.');
