@@ -1296,7 +1296,7 @@ async function renderClassAttendance(content){
       });
       (students||[]).forEach(st=>{
         const card=node('article',undefined,'attendance-student-card');
-        const initials=String(st.full_name||'Aluno').trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
+        const initials=String(st.full_name||'Aluno').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
         const avatar=node('div',initials||'AL','attendance-avatar');avatar.style.position='relative';avatar.style.overflow='hidden';avatar.setAttribute('aria-label',attendancePhotoUrls.has(st.id)?'Fotografia biométrica do aluno':'Foto não cadastrada; iniciais do aluno');
         const attendancePhotoUrl=attendancePhotoUrls.get(st.id);
         if(attendancePhotoUrl){const photo=node('img');photo.src=attendancePhotoUrl;photo.alt='Foto biométrica de '+(st.full_name||'aluno');photo.loading='lazy';photo.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';photo.onerror=()=>photo.remove();avatar.append(photo);}
@@ -1745,7 +1745,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
  const status=node('p','Carregando alunos autorizados…','status-line');panel.append(status);
  const details=node('div',undefined,'activity-card');panel.append(details);content.append(panel);
  let students=guardian?guardianChildren:[],classes=[];
- const ageCategory=(birth)=>{if(!birth)return 'Idade não informada';const age=currentYear-Number(String(birth).slice(0,4));if(age<=6)return 'Pré-Mirim (4–6)';if(age<=9)return 'Mirim (7–9)';if(age<=12)return 'Infantil (10–12)';if(age<=15)return 'Infanto-Juvenil (13–15)';if(age<=17)return 'Juvenil (16–17)';return 'Adulto (18+)';};
+ const ageCategory=(birth)=>{if(!birth)return 'Idade não informada';const age=currentYear-Number(String(birth).slice(0,4));if(age<4)return 'Abaixo da categoria Pré-Mirim';if(age<=6)return 'Pré-Mirim';if(age<=9)return 'Mirim';if(age<=12)return 'Infantil';if(age<=15)return 'Infanto-Juvenil';if(age<=17)return 'Juvenil';return 'Adulto';};
  const field=(label,el)=>{const wrap=node('div',undefined,'field');wrap.append(node('label',label),el);return wrap;};
  const input=(type='number',max)=>{const el=node('input',undefined,'search');el.type=type;if(max!==undefined)el.max=String(max);el.min='0';return el;};
  async function loadStudents(){
@@ -1764,9 +1764,9 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   details.replaceChildren();
   const st=students.find(x=>x.id===studentSelect.value);
   if(!st){status.textContent='Nenhum aluno disponível para este acesso.';return;}
-  const year=Number(yearSelect.value),quarter=Number(quarterSelect.value);
+  const year=Number(yearSelect.value),quarter=Number(quarterSelect.value);const periodStart=year+'-'+String((quarter-1)*3+1).padStart(2,'0')+'-01';const periodEnd=new Date(Date.UTC(year,quarter*3,0)).toISOString().slice(0,10);
   const [att,grad,assess]=await Promise.all([
-   supabaseClient.from('attendance').select('status,lesson:lessons!inner(lesson_date)').eq('student_id',st.id).gte('lesson.lesson_date',year+'-'+String((quarter-1)*3+1).padStart(2,'0')+'-01').lte('lesson.lesson_date',year+'-'+String(quarter*3).padStart(2,'0')+'-31'),
+   supabaseClient.from('attendance').select('status,lesson:lessons!inner(lesson_date)').eq('student_id',st.id).gte('lesson.lesson_date',periodStart).lte('lesson.lesson_date',periodEnd),
    supabaseClient.from('graduations').select('belt,degrees,awarded_on').eq('student_id',st.id).order('awarded_on',{ascending:false}).limit(1),
    supabaseClient.from('quarterly_assessments').select('*').eq('student_id',st.id).eq('assessment_year',year).eq('quarter',quarter).maybeSingle()
   ]);
