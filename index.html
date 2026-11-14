@@ -1812,7 +1812,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
    });
    details.append(save);
   }
-  if(quarter===4&&Number(totalLine.textContent.match(/[\d.]+/)?.[0]||0)>=70&&pct>=75){
+  if(quarter===4&&new Date()>=new Date(year,11,31,23,59,59)&&Number(totalLine.textContent.match(/[\d.]+/)?.[0]||0)>=70&&pct>=75){
    const cert=node('button','Gerar certificado de graduação (PDF)','btn btn-outline small-btn');cert.type='button';cert.addEventListener('click',()=>{const w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Certificado — Projeto Sementes</title><style>body{font-family:Arial;text-align:center;padding:60px;color:#0b1b30}h1{color:#9b741b}p{font-size:18px;line-height:1.7}.seal{border:5px double #d7b34b;padding:40px}</style><div class="seal"><h1>PROJETO SEMENTES</h1><h2>CERTIFICADO DE GRADUAÇÃO</h2><p>Certificamos que <b>'+String(st.full_name||'').replace(/[&<>"]/g,'')+'</b> concluiu a avaliação anual de Jiu-Jitsu e foi considerado apto para a graduação.</p><p>Faixa registrada: '+String(belt).replace(/[&<>"]/g,'')+'</p><p>Corumbá-MS, '+new Date().toLocaleDateString('pt-BR')+'</p><br><br>_________________________________<br>Professor responsável</div><script>window.onload=()=>window.print()<\/script></html>');w.document.close();});
    details.append(cert);
   }
