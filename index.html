@@ -1747,7 +1747,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
  let students=guardian?guardianChildren:[],classes=[];
  const childBelts=['Branca','Cinza e Branca','Cinza','Cinza e Preta','Amarela e Branca','Amarela','Amarela e Preta','Laranja e Branca','Laranja','Laranja e Preta','Verde e Branca','Verde','Verde e Preta'];
  const adultBelts=['Branca','Azul','Roxa','Marrom','Preta'];
- const degreeCount=(value)=>{const m=String(value??'0').match(/\\d+/);return m?Number(m[0]):0;};
+ const degreeCount=(value)=>{const m=String(value??'0').match(/\d+/);return m?Number(m[0]):0;};
  const graduationSuggestion=(birth,belt,degrees)=>{
   const age=birth?currentYear-Number(String(birth).slice(0,4)):null;
   if(age===null)return null;
@@ -1822,7 +1822,6 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const recommendationTitle=node('h3','Recomendação de graduação');recommendationBox.append(recommendationTitle);
   const recommendationText=node('p','','status-line');recommendationBox.append(recommendationText);
   const decisionStatus=node('p','','status-line');recommendationBox.append(decisionStatus);
-  details.append(recommendationBox);
   let savedAssessmentId=saved.id||null;
   const showRecommendation=()=>{
    const score=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);
@@ -1849,8 +1848,11 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
    });
    details.append(save);
   }
+  const ageForDisplay=st.birth_date?currentYear-Number(String(st.birth_date).slice(0,4)):null;
+  recommendationBox.append(node('p','Graduação atual: '+belt+' • '+degrees+' grau(s)'+(ageForDisplay!==null?' • Idade civil: '+ageForDisplay+' anos':''),'status-line'));
+  details.append(recommendationBox);
   const currentScore=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);
-  const canRecommend=currentScore>=70&&pct>=75&&!!suggestion;
+  const canRecommend=currentScore>=70&&pct>=75&&!!suggestion&&suggestion.kind!=='age_hold';
   if(!guardian&&canRecommend&&saved.id&&currentProfile?.role==='admin'){
    const decisionPanel=node('div',undefined,'activity-card');decisionPanel.style.cssText='margin-top:14px;padding:16px;border-left:4px solid #d7b34b';
    decisionPanel.append(node('h3','Decisão do Mestre'));
