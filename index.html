@@ -1753,14 +1753,19 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   if(age===null)return null;
   const kids=age>=4&&age<=15,adult=age>=16;
   if(!kids&&!adult)return null;
-  const list=kids?childBelts:adultBelts;
   const current=String(belt||'Branca').trim();
-  let index=list.findIndex(x=>x.toLocaleLowerCase('pt-BR')===current.toLocaleLowerCase('pt-BR'));
+  const childIndex=childBelts.findIndex(x=>x.toLocaleLowerCase('pt-BR')===current.toLocaleLowerCase('pt-BR'));
+  if(adult&&childIndex>=0)return {kind:'review',belt:current,degrees:'0',label:'Transição de categoria aos 16 anos: revisão de faixa pelo Mestre',ageModel:'Transição infantil/adulto — confirmação manual'};
+  const list=kids?childBelts:adultBelts;
+  const index=list.findIndex(x=>x.toLocaleLowerCase('pt-BR')===current.toLocaleLowerCase('pt-BR'));
   if(index<0)return null;
   const max=kids?3:4,deg=degreeCount(degrees);
-  if(deg<max)return {kind:'degree',belt:current,degrees:String(deg+1)+'º grau',label:(deg+1)+'º grau da faixa '+current,ageModel:kids?'Infantil IBJJF — 3 graus':'A partir de 16 anos — 4 graus'};
-  if(index>=list.length-1)return {kind:'review',belt:current,degrees:'0',label:'Revisão especial de faixa pelo Mestre',ageModel:kids?'Infantil IBJJF — 3 graus':'A partir de 16 anos — 4 graus'};
-  return {kind:'belt',belt:list[index+1],degrees:'0',label:'Próxima faixa: '+list[index+1],ageModel:kids?'Infantil IBJJF — 3 graus':'A partir de 16 anos — 4 graus'};
+  if(deg<max)return {kind:'degree',belt:current,degrees:String(deg+1)+'º grau',label:(deg+1)+'º grau da faixa '+current,ageModel:kids?'Infantil — 3 graus por faixa':'A partir de 16 anos — 4 graus por faixa'};
+  if(index>=list.length-1)return {kind:'review',belt:current,degrees:'0',label:'Revisão especial de faixa pelo Mestre',ageModel:kids?'Infantil — 3 graus por faixa':'A partir de 16 anos — 4 graus por faixa'};
+  const next=list[index+1];
+  const minAge=kids?({ 'Cinza e Branca':4,'Cinza':4,'Cinza e Preta':4,'Amarela e Branca':7,'Amarela':7,'Amarela e Preta':7,'Laranja e Branca':10,'Laranja':10,'Laranja e Preta':10,'Verde e Branca':13,'Verde':13,'Verde e Preta':13 }[next]||4):({ 'Azul':16,'Roxa':16,'Marrom':18,'Preta':19 }[next]||16);
+  if(age<minAge)return {kind:'age_hold',belt:current,degrees:String(deg),label:'Aguardar idade mínima para a próxima faixa ('+minAge+' anos)',ageModel:kids?'Infantil — 3 graus por faixa':'A partir de 16 anos — 4 graus por faixa'};
+  return {kind:'belt',belt:next,degrees:'0',label:'Próxima faixa: '+next,ageModel:kids?'Infantil — 3 graus por faixa':'A partir de 16 anos — 4 graus por faixa'};
  };
  const ageCategory=(birth)=>{if(!birth)return 'Idade não informada';const age=currentYear-Number(String(birth).slice(0,4));if(age<4)return 'Abaixo da categoria Pré-Mirim';if(age<=6)return 'Pré-Mirim';if(age<=9)return 'Mirim';if(age<=12)return 'Infantil';if(age<=15)return 'Infanto-Juvenil';if(age<=17)return 'Juvenil';return 'Adulto';};
  const field=(label,el)=>{const wrap=node('div',undefined,'field');wrap.append(node('label',label),el);return wrap;};
@@ -1811,7 +1816,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const techNote=node('p','Exame prático: fundamentos, posições, movimentações, defesa, controle e técnicas adequadas à idade e faixa, respeitando as restrições oficiais da categoria.','status-line');details.append(techNote);
   const totalLine=node('h3','');const statusLine=node('p','','status-line');
   const updateTotal=()=>{const totalScore=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);const eligible=totalScore>=70&&pct>=75;totalLine.textContent='Total: '+totalScore.toFixed(1)+'/100';statusLine.textContent=eligible?'✓ APTO PARA GRADUAÇÃO':'⚠ EM ACOMPANHAMENTO';statusLine.style.fontWeight='800';statusLine.style.color=eligible?'#16803c':'#b66a00';};
-  [discipline,education,technical,reportCheck,followCheck].forEach(el=>el.addEventListener('input',()=>{if(el===reportCheck||el===followCheck)education.value=(reportCheck.checked?10:0)+(followCheck.checked?10:0);updateTotal();}));
+  [discipline,education,technical,reportCheck,followCheck].forEach(el=>el.addEventListener('input',()=>{if(el===reportCheck||el===followCheck)education.value=(reportCheck.checked?10:0)+(followCheck.checked?10:0);updateTotal();if(recommendationText.isConnected)showRecommendation();}));
   details.append(totalLine,statusLine,field('Parecer do professor',opinion));updateTotal();
   const recommendationBox=node('div',undefined,'activity-card');recommendationBox.style.cssText='margin-top:14px;padding:16px;border-left:4px solid #d7b34b';
   const recommendationTitle=node('h3','Recomendação de graduação');recommendationBox.append(recommendationTitle);
@@ -1821,8 +1826,8 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   let savedAssessmentId=saved.id||null;
   const showRecommendation=()=>{
    const score=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);
-   const ok=score>=70&&pct>=75&&!!suggestion;
-   recommendationText.textContent=ok?(suggestion.label+' • '+suggestion.ageModel+'. A recomendação não altera a graduação automaticamente.'):'Ainda não há recomendação: alcance 70 pontos, frequência mínima de 75% e confirme os dados de idade/faixa.';
+   const ok=score>=70&&pct>=75&&!!suggestion&&suggestion.kind!=='age_hold';
+   recommendationText.textContent=score>=70&&pct>=75&&suggestion?.kind==='age_hold'?suggestion.label+'. A pontuação foi atingida, mas a idade mínima ainda não permite a recomendação.':ok?(suggestion.label+' • '+suggestion.ageModel+'. A recomendação não altera a graduação automaticamente.'):'Ainda não há recomendação: alcance 70 pontos, frequência mínima de 75% e confirme os dados de idade/faixa.';
    recommendationText.style.color=ok?'#16803c':'#8a5a00';
    return ok;
   };
