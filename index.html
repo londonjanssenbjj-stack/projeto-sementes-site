@@ -1736,7 +1736,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
  const yearSelect=node('select',undefined,'search');yearSelect.setAttribute('aria-label','Ano da avaliação');
  const currentYear=new Date().getFullYear();[currentYear-1,currentYear,currentYear+1].forEach(y=>{const o=node('option',String(y));o.value=String(y);if(y===currentYear)o.selected=true;yearSelect.append(o);});
  const quarterSelect=node('select',undefined,'search');quarterSelect.setAttribute('aria-label','Ciclo trimestral');
- [['1','1º Trimestre — Março — 1º grau'],['2','2º Trimestre — Junho — 2º grau + boletim'],['3','3º Trimestre — Setembro — 3º grau'],['4','4º Trimestre — Dezembro — avaliação final e cerimônia']].forEach(([v,l])=>{const o=node('option',l);o.value=v;quarterSelect.append(o);});
+ [['1','1º Trimestre — Março — 1º grau'],['2','2º Trimestre — Junho — 2º grau + boletim'],['3','3º Trimestre — Setembro — 3º grau'],['4','4º Trimestre — Dezembro — avaliação final e cerimônia']].forEach(([v,l])=>{const o=node('option',l);o.value=v;if(Number(v)===Math.floor(new Date().getMonth()/3)+1)o.selected=true;quarterSelect.append(o);});
  controls.append(yearSelect,quarterSelect);
  const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Turma');
  const studentSelect=node('select',undefined,'search');studentSelect.setAttribute('aria-label','Aluno');
@@ -1787,8 +1787,13 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const st=students.find(x=>x.id===studentSelect.value);
   if(!st){status.textContent='Nenhum aluno disponível para este acesso.';return;}
   const year=Number(yearSelect.value),quarter=Number(quarterSelect.value);const periodStart=year+'-'+String((quarter-1)*3+1).padStart(2,'0')+'-01';const periodEnd=new Date(Date.UTC(year,quarter*3,0)).toISOString().slice(0,10);
+  let lessonQuery=supabaseClient.from('lessons').select('id').gte('lesson_date',periodStart).lte('lesson_date',periodEnd);
+  if(!guardian&&classSelect.value)lessonQuery=lessonQuery.eq('class_id',classSelect.value);
+  const {data:periodLessons,error:periodLessonsError}=await lessonQuery;
+  if(periodLessonsError)throw periodLessonsError;
+  const lessonIds=(periodLessons||[]).map(x=>x.id);
   const [att,grad,assess,legacy]=await Promise.all([
-   supabaseClient.from('attendance').select('status,lesson:lessons!inner(lesson_date)').eq('student_id',st.id).gte('lesson.lesson_date',periodStart).lte('lesson.lesson_date',periodEnd),
+   lessonIds.length?supabaseClient.from('attendance').select('status').eq('student_id',st.id).in('lesson_id',lessonIds):Promise.resolve({data:[],error:null}),
    supabaseClient.from('graduations').select('belt,degrees,awarded_on').eq('student_id',st.id).order('awarded_on',{ascending:false}).limit(1),
    supabaseClient.from('quarterly_assessments').select('*').eq('student_id',st.id).eq('assessment_year',year).eq('quarter',quarter).maybeSingle(),
    supabaseClient.from('technical_evaluations').select('evaluated_on,evaluation').eq('student_id',st.id).order('evaluated_on',{ascending:false}).limit(20)
