@@ -1057,14 +1057,7 @@ async function renderGuardianFamily(content,view='guardian-overview'){
     }
     return;
   }
-  if(view==='guardian-evaluation'){
-    const box=section('Avaliação técnica','Avaliações registradas pelos professores para seus alunos.');
-    const {data,error}=await supabaseClient.from('technical_evaluations').select('student_id,evaluated_on,evaluation').in('student_id',ids).order('evaluated_on',{ascending:false}).limit(200);
-    if(error){box.append(node('p','Não foi possível carregar as avaliações: '+error.message,'status-line error'));return;}
-    const names=new Map(children.map(x=>[x.id,x.full_name]));
-    listRows(box,['Aluno','Data','Avaliação'],(data||[]).map(x=>[names.get(x.student_id)||'Aluno',fmtDate(x.evaluated_on),x.evaluation]));
-    return;
-  }
+  if(view==='guardian-evaluation'){await renderQuarterlyAssessments(content,true,children);return;}
   if(view==='guardian-graduation'){
     const box=section('Graduação','Faixa atual e histórico de graduações dos seus alunos.');
     const {data,error}=await supabaseClient.from('graduations').select('student_id,belt,degrees,awarded_on,note').in('student_id',ids).order('awarded_on',{ascending:false}).limit(200);
@@ -1735,6 +1728,109 @@ async function renderTechnicalProgress(content){
     await loadStudents();
   }catch(e){status.textContent='Não foi possível carregar a área técnica: '+(e.message||String(e));}
 }
+
+async function renderQuarterlyAssessments(content,guardian=false,guardianChildren=[]){
+ const panel=node('div',undefined,'dash-panel');
+ panel.append(node('h2','Avaliação e Graduação'),node('p',guardian?'Consulte as avaliações trimestrais, a frequência, o parecer do professor e a situação de graduação dos alunos vinculados.':'Avaliação trimestral de 100 pontos. A decisão final de graduação permanece sob responsabilidade do professor e da administração.','status-line'));
+ const controls=node('div',undefined,'student-tools');
+ const yearSelect=node('select',undefined,'search');yearSelect.setAttribute('aria-label','Ano da avaliação');
+ const currentYear=new Date().getFullYear();[currentYear-1,currentYear,currentYear+1].forEach(y=>{const o=node('option',String(y));o.value=String(y);if(y===currentYear)o.selected=true;yearSelect.append(o);});
+ const quarterSelect=node('select',undefined,'search');quarterSelect.setAttribute('aria-label','Ciclo trimestral');
+ [['1','1º Trimestre — Março — 1º grau'],['2','2º Trimestre — Junho — 2º grau + boletim'],['3','3º Trimestre — Setembro — 3º grau'],['4','4º Trimestre — Dezembro — avaliação final e cerimônia']].forEach(([v,l])=>{const o=node('option',l);o.value=v;quarterSelect.append(o);});
+ controls.append(yearSelect,quarterSelect);
+ const classSelect=node('select',undefined,'search');classSelect.setAttribute('aria-label','Turma');
+ const studentSelect=node('select',undefined,'search');studentSelect.setAttribute('aria-label','Aluno');
+ if(!guardian)controls.append(classSelect);
+ controls.append(studentSelect);panel.append(controls);
+ const status=node('p','Carregando alunos autorizados…','status-line');panel.append(status);
+ const details=node('div',undefined,'activity-card');panel.append(details);content.append(panel);
+ let students=guardian?guardianChildren:[],classes=[];
+ const ageCategory=(birth)=>{if(!birth)return 'Idade não informada';const age=currentYear-Number(String(birth).slice(0,4));if(age<=6)return 'Pré-Mirim (4–6)';if(age<=9)return 'Mirim (7–9)';if(age<=12)return 'Infantil (10–12)';if(age<=15)return 'Infanto-Juvenil (13–15)';if(age<=17)return 'Juvenil (16–17)';return 'Adulto (18+)';};
+ const field=(label,el)=>{const wrap=node('div',undefined,'field');wrap.append(node('label',label),el);return wrap;};
+ const input=(type='number',max)=>{const el=node('input',undefined,'search');el.type=type;if(max!==undefined)el.max=String(max);el.min='0';return el;};
+ async function loadStudents(){
+  if(guardian){studentSelect.replaceChildren();students.forEach(st=>{const o=node('option',st.full_name||'Aluno');o.value=st.id;studentSelect.append(o);});}
+  else{
+   const {data:links,error:le}=await supabaseClient.from('class_enrollments').select('student_id').eq('class_id',classSelect.value).eq('active',true);
+   if(le)throw le;
+   const ids=[...new Set((links||[]).map(x=>x.student_id).filter(Boolean))];
+   const {data,error}=ids.length?await supabaseClient.from('students').select('id,full_name,birth_date,belt').in('id',ids).order('full_name'):{data:[],error:null};
+   if(error)throw error;students=data||[];
+   studentSelect.replaceChildren();students.forEach(st=>{const o=node('option',st.full_name||'Aluno');o.value=st.id;studentSelect.append(o);});
+  }
+  await loadAssessment();
+ }
+ async function loadAssessment(){
+  details.replaceChildren();
+  const st=students.find(x=>x.id===studentSelect.value);
+  if(!st){status.textContent='Nenhum aluno disponível para este acesso.';return;}
+  const year=Number(yearSelect.value),quarter=Number(quarterSelect.value);
+  const [att,grad,assess]=await Promise.all([
+   supabaseClient.from('attendance').select('status,lesson:lessons!inner(lesson_date)').eq('student_id',st.id).gte('lesson.lesson_date',year+'-'+String((quarter-1)*3+1).padStart(2,'0')+'-01').lte('lesson.lesson_date',year+'-'+String(quarter*3).padStart(2,'0')+'-31'),
+   supabaseClient.from('graduations').select('belt,degrees,awarded_on').eq('student_id',st.id).order('awarded_on',{ascending:false}).limit(1),
+   supabaseClient.from('quarterly_assessments').select('*').eq('student_id',st.id).eq('assessment_year',year).eq('quarter',quarter).maybeSingle()
+  ]);
+  if(att.error)throw att.error;if(grad.error)throw grad.error;if(assess.error)throw assess.error;
+  const rows=att.data||[],present=rows.filter(x=>x.status==='present').length,total=rows.length,pct=total?present/total*100:0;
+  const saved=assess.data||{};
+  const belt=(grad.data||[])[0]?.belt||st.belt||'Não informada';
+  const degrees=(grad.data||[])[0]?.degrees||'0';
+  const header=node('div',undefined,'student-summary');
+  header.append(node('h3',st.full_name||'Aluno'),node('p','Categoria CBJJ/IBJJF por ano civil: '+ageCategory(st.birth_date)+' • Faixa: '+belt+' • Graus registrados: '+degrees,'status-line'),node('p','Frequência no trimestre: '+present+'/'+total+' presenças ('+pct.toFixed(1).replace('.',',')+'%)','status-line'));
+  details.append(header);
+  const report=node('div',undefined,'student-tools');report.style.marginTop='12px';
+  const reportCheck=node('input');reportCheck.type='checkbox';reportCheck.checked=saved.school_report_checked===true;reportCheck.disabled=guardian;
+  const followCheck=node('input');followCheck.type='checkbox';followCheck.checked=saved.parent_followup===true;followCheck.disabled=guardian;
+  report.append(field('Boletim escolar conferido (10 pontos)',reportCheck),field('Acompanhamento familiar realizado (10 pontos)',followCheck));details.append(report);
+  const attendanceScore=input('number',30);attendanceScore.step='0.5';attendanceScore.value=(saved.attendance_score??Math.min(30,pct*.30)).toFixed(1);attendanceScore.readOnly=true;
+  const discipline=input('number',25);discipline.step='0.5';discipline.value=saved.discipline_score??0;
+  const education=input('number',20);education.step='0.5';education.value=saved.education_score??((reportCheck.checked?10:0)+(followCheck.checked?10:0));
+  const technical=input('number',25);technical.step='0.5';technical.value=saved.technical_score??0;
+  const opinion=node('textarea',saved.teacher_opinion||'','search');opinion.rows=4;opinion.placeholder='Parecer do professor para a família…';opinion.style.width='100%';opinion.readOnly=guardian;
+  const scoring=node('div',undefined,'student-detail-grid');
+  scoring.append(field('Frequência — máximo 30 (automático)',attendanceScore),field('Disciplina, respeito e etiqueta — máximo 25',discipline),field('Educação e família — máximo 20',education),field('Exame técnico CBJJ — máximo 25',technical));
+  details.append(node('h3','Pontuação (100 pontos)'),scoring);
+  const techNote=node('p','Exame prático: fundamentos, posições, movimentações, defesa, controle e técnicas adequadas à idade e faixa, respeitando as restrições oficiais da categoria.','status-line');details.append(techNote);
+  const totalLine=node('h3','');const statusLine=node('p','','status-line');
+  const updateTotal=()=>{const totalScore=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);const eligible=totalScore>=70&&pct>=75;totalLine.textContent='Total: '+totalScore.toFixed(1)+'/100';statusLine.textContent=eligible?'✓ APTO PARA GRADUAÇÃO':'⚠ EM ACOMPANHAMENTO';statusLine.style.fontWeight='800';statusLine.style.color=eligible?'#16803c':'#b66a00';};
+  [discipline,education,technical,reportCheck,followCheck].forEach(el=>el.addEventListener('input',()=>{if(el===reportCheck||el===followCheck)education.value=(reportCheck.checked?10:0)+(followCheck.checked?10:0);updateTotal();}));
+  details.append(totalLine,statusLine,field('Parecer do professor',opinion));updateTotal();
+  if(!guardian){
+   [discipline,education,technical].forEach(el=>el.addEventListener('change',()=>{const max=Number(el.max);if(Number(el.value)<0)el.value=0;if(Number(el.value)>max)el.value=max;updateTotal();}));
+   const save=node('button','Salvar avaliação trimestral','btn btn-gold small-btn');save.type='button';
+   save.addEventListener('click',async()=>{
+    const vals=[discipline,education,technical].map(x=>Number(x.value)||0);
+    if(vals.some((v,i)=>v>[25,20,25][i])){status.textContent='Confira os limites máximos de pontuação.';return;}
+    save.disabled=true;
+    try{
+     const payload={student_id:st.id,class_id:classSelect.value||null,assessment_year:year,quarter,attendance_percent:Number(pct.toFixed(2)),attendance_score:Number(attendanceScore.value),discipline_score:vals[0],education_score:vals[1],technical_score:vals[2],school_report_checked:reportCheck.checked,parent_followup:followCheck.checked,teacher_opinion:opinion.value.trim()||null,evaluated_by:currentProfile.id,technical_items:{age_category:ageCategory(st.birth_date)}};
+     const {error}=await supabaseClient.from('quarterly_assessments').upsert(payload,{onConflict:'student_id,assessment_year,quarter'});if(error)throw error;
+     status.textContent='Avaliação trimestral salva com sucesso.';await loadAssessment();
+    }catch(e){status.textContent='Falha ao salvar avaliação: '+e.message;status.className='status-line error';}
+    finally{save.disabled=false;}
+   });
+   details.append(save);
+  }
+  if(quarter===4&&Number(totalLine.textContent.match(/[\d.]+/)?.[0]||0)>=70&&pct>=75){
+   const cert=node('button','Gerar certificado de graduação (PDF)','btn btn-outline small-btn');cert.type='button';cert.addEventListener('click',()=>{const w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Certificado — Projeto Sementes</title><style>body{font-family:Arial;text-align:center;padding:60px;color:#0b1b30}h1{color:#9b741b}p{font-size:18px;line-height:1.7}.seal{border:5px double #d7b34b;padding:40px}</style><div class="seal"><h1>PROJETO SEMENTES</h1><h2>CERTIFICADO DE GRADUAÇÃO</h2><p>Certificamos que <b>'+String(st.full_name||'').replace(/[&<>"]/g,'')+'</b> concluiu a avaliação anual de Jiu-Jitsu e foi considerado apto para a graduação.</p><p>Faixa registrada: '+String(belt).replace(/[&<>"]/g,'')+'</p><p>Corumbá-MS, '+new Date().toLocaleDateString('pt-BR')+'</p><br><br>_________________________________<br>Professor responsável</div><script>window.onload=()=>window.print()<\/script></html>');w.document.close();});
+   details.append(cert);
+  }
+  status.textContent='Ciclo '+quarter+'º trimestre de '+year+'. '+(guardian?'Resultado somente para consulta.':'A avaliação é editável pela equipe autorizada.');
+ }
+ try{
+  if(!guardian){
+   const {data,error}=await supabaseClient.from('classes').select('id,name').eq('is_active',true).order('name');if(error)throw error;classes=data||[];
+   classSelect.replaceChildren();classes.forEach(c=>{const o=node('option',c.name);o.value=c.id;classSelect.append(o);});
+   if(!classes.length){status.textContent='Nenhuma turma ativa disponível para este perfil.';return;}
+   classSelect.addEventListener('change',()=>loadStudents().catch(e=>status.textContent=e.message));
+  }
+  studentSelect.addEventListener('change',()=>loadAssessment().catch(e=>status.textContent=e.message));
+  yearSelect.addEventListener('change',()=>loadAssessment().catch(e=>status.textContent=e.message));
+  quarterSelect.addEventListener('change',()=>loadAssessment().catch(e=>status.textContent=e.message));
+  await loadStudents();
+ }catch(e){status.textContent='Não foi possível carregar a avaliação: '+e.message;status.className='status-line error';}
+}
+
 async function renderView(view){
   const content=$('dashContent');content.replaceChildren();
   $('dashNav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
@@ -1746,7 +1842,7 @@ async function renderView(view){
   if(view==='alunos'){await renderStudents(content);return;}
   if(view==='chamada'){await renderClassAttendance(content);return;}
   if(view==='historico'){await renderAttendanceHistory(content);return;}
-  if(view==='tecnica'){await renderTechnicalProgress(content);return;}
+  if(view==='tecnica'){await renderQuarterlyAssessments(content,false);return;}
   if(view==='campeao'){await renderChampions(content);return;}
   if(view==='relatorios'){await renderStudentReports(content);return;}
   await renderActivities(content);
