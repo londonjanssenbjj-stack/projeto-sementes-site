@@ -1745,6 +1745,23 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
  const status=node('p','Carregando alunos autorizados…','status-line');panel.append(status);
  const details=node('div',undefined,'activity-card');panel.append(details);content.append(panel);
  let students=guardian?guardianChildren:[],classes=[];
+ const childBelts=['Branca','Cinza e Branca','Cinza','Cinza e Preta','Amarela e Branca','Amarela','Amarela e Preta','Laranja e Branca','Laranja','Laranja e Preta','Verde e Branca','Verde','Verde e Preta'];
+ const adultBelts=['Branca','Azul','Roxa','Marrom','Preta'];
+ const degreeCount=(value)=>{const m=String(value??'0').match(/\\d+/);return m?Number(m[0]):0;};
+ const graduationSuggestion=(birth,belt,degrees)=>{
+  const age=birth?currentYear-Number(String(birth).slice(0,4)):null;
+  if(age===null)return null;
+  const kids=age>=4&&age<=15,adult=age>=16;
+  if(!kids&&!adult)return null;
+  const list=kids?childBelts:adultBelts;
+  const current=String(belt||'Branca').trim();
+  let index=list.findIndex(x=>x.toLocaleLowerCase('pt-BR')===current.toLocaleLowerCase('pt-BR'));
+  if(index<0)return null;
+  const max=kids?3:4,deg=degreeCount(degrees);
+  if(deg<max)return {kind:'degree',belt:current,degrees:String(deg+1)+'º grau',label:(deg+1)+'º grau da faixa '+current,ageModel:kids?'Infantil IBJJF — 3 graus':'A partir de 16 anos — 4 graus'};
+  if(index>=list.length-1)return {kind:'review',belt:current,degrees:'0',label:'Revisão especial de faixa pelo Mestre',ageModel:kids?'Infantil IBJJF — 3 graus':'A partir de 16 anos — 4 graus'};
+  return {kind:'belt',belt:list[index+1],degrees:'0',label:'Próxima faixa: '+list[index+1],ageModel:kids?'Infantil IBJJF — 3 graus':'A partir de 16 anos — 4 graus'};
+ };
  const ageCategory=(birth)=>{if(!birth)return 'Idade não informada';const age=currentYear-Number(String(birth).slice(0,4));if(age<4)return 'Abaixo da categoria Pré-Mirim';if(age<=6)return 'Pré-Mirim';if(age<=9)return 'Mirim';if(age<=12)return 'Infantil';if(age<=15)return 'Infanto-Juvenil';if(age<=17)return 'Juvenil';return 'Adulto';};
  const field=(label,el)=>{const wrap=node('div',undefined,'field');wrap.append(node('label',label),el);return wrap;};
  const input=(type='number',max)=>{const el=node('input',undefined,'search');el.type=type;if(max!==undefined)el.max=String(max);el.min='0';return el;};
@@ -1775,7 +1792,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const rows=att.data||[],present=rows.filter(x=>x.status==='present').length,total=rows.length,pct=total?present/total*100:0;
   const saved=assess.data||{};
   const belt=(grad.data||[])[0]?.belt||st.belt||'Não informada';
-  const degrees=(grad.data||[])[0]?.degrees||'0';
+  const degrees=(grad.data||[])[0]?.degrees||'0';const suggestion=graduationSuggestion(st.birth_date,belt,degrees);
   const header=node('div',undefined,'student-summary');
   header.append(node('h3',st.full_name||'Aluno'),node('p','Categoria CBJJ/IBJJF por ano civil: '+ageCategory(st.birth_date)+' • Faixa: '+belt+' • Graus registrados: '+degrees,'status-line'),node('p','Frequência no trimestre: '+present+'/'+total+' presenças ('+pct.toFixed(1).replace('.',',')+'%)','status-line'));
   details.append(header);
@@ -1796,6 +1813,21 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const updateTotal=()=>{const totalScore=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);const eligible=totalScore>=70&&pct>=75;totalLine.textContent='Total: '+totalScore.toFixed(1)+'/100';statusLine.textContent=eligible?'✓ APTO PARA GRADUAÇÃO':'⚠ EM ACOMPANHAMENTO';statusLine.style.fontWeight='800';statusLine.style.color=eligible?'#16803c':'#b66a00';};
   [discipline,education,technical,reportCheck,followCheck].forEach(el=>el.addEventListener('input',()=>{if(el===reportCheck||el===followCheck)education.value=(reportCheck.checked?10:0)+(followCheck.checked?10:0);updateTotal();}));
   details.append(totalLine,statusLine,field('Parecer do professor',opinion));updateTotal();
+  const recommendationBox=node('div',undefined,'activity-card');recommendationBox.style.cssText='margin-top:14px;padding:16px;border-left:4px solid #d7b34b';
+  const recommendationTitle=node('h3','Recomendação de graduação');recommendationBox.append(recommendationTitle);
+  const recommendationText=node('p','','status-line');recommendationBox.append(recommendationText);
+  const decisionStatus=node('p','','status-line');recommendationBox.append(decisionStatus);
+  details.append(recommendationBox);
+  let savedAssessmentId=saved.id||null;
+  const showRecommendation=()=>{
+   const score=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);
+   const ok=score>=70&&pct>=75&&!!suggestion;
+   recommendationText.textContent=ok?(suggestion.label+' • '+suggestion.ageModel+'. A recomendação não altera a graduação automaticamente.'):'Ainda não há recomendação: alcance 70 pontos, frequência mínima de 75% e confirme os dados de idade/faixa.';
+   recommendationText.style.color=ok?'#16803c':'#8a5a00';
+   return ok;
+  };
+  showRecommendation();
+
   if(!guardian){
    [discipline,education,technical].forEach(el=>el.addEventListener('change',()=>{const max=Number(el.max);if(Number(el.value)<0)el.value=0;if(Number(el.value)>max)el.value=max;updateTotal();}));
    const save=node('button','Salvar avaliação trimestral','btn btn-gold small-btn');save.type='button';
@@ -1804,13 +1836,36 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
     if(vals.some((v,i)=>v>[25,20,25][i])){status.textContent='Confira os limites máximos de pontuação.';return;}
     save.disabled=true;
     try{
-     const payload={student_id:st.id,class_id:classSelect.value||null,assessment_year:year,quarter,attendance_percent:Number(pct.toFixed(2)),attendance_score:Number(attendanceScore.value),discipline_score:vals[0],education_score:vals[1],technical_score:vals[2],school_report_checked:reportCheck.checked,parent_followup:followCheck.checked,teacher_opinion:opinion.value.trim()||null,evaluated_by:currentProfile.id,technical_items:{age_category:ageCategory(st.birth_date)}};
+     const payload={student_id:st.id,class_id:classSelect.value||null,assessment_year:year,quarter,attendance_percent:Number(pct.toFixed(2)),attendance_score:Number(attendanceScore.value),discipline_score:vals[0],education_score:vals[1],technical_score:vals[2],school_report_checked:reportCheck.checked,parent_followup:followCheck.checked,teacher_opinion:opinion.value.trim()||null,evaluated_by:currentProfile.id,technical_items:{age_category:ageCategory(st.birth_date)},recommended_belt:suggestion?.belt||null,recommended_degrees:suggestion?.degrees||null,recommendation_kind:suggestion?.kind||null};
      const {error}=await supabaseClient.from('quarterly_assessments').upsert(payload,{onConflict:'student_id,assessment_year,quarter'});if(error)throw error;
      status.textContent='Avaliação trimestral salva com sucesso.';await loadAssessment();
     }catch(e){status.textContent='Falha ao salvar avaliação: '+e.message;status.className='status-line error';}
     finally{save.disabled=false;}
    });
    details.append(save);
+  }
+  const currentScore=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);
+  const canRecommend=currentScore>=70&&pct>=75&&!!suggestion;
+  if(!guardian&&canRecommend&&saved.id&&currentProfile?.role==='admin'){
+   const decisionPanel=node('div',undefined,'activity-card');decisionPanel.style.cssText='margin-top:14px;padding:16px;border-left:4px solid #d7b34b';
+   decisionPanel.append(node('h3','Decisão do Mestre'));
+   decisionPanel.append(node('p','Graduação atual: '+belt+' • '+degrees+' grau(s). Recomendação: '+suggestion.label+'.','status-line'));
+   const decisionNote=node('textarea');decisionNote.className='search';decisionNote.rows=3;decisionNote.style.width='100%';decisionNote.placeholder='Observação da decisão (opcional)';
+   const decisionButtons=node('div',undefined,'student-tools');
+   const act=async(decision,label)=>{
+    const btn=decisionButtons.querySelector('[data-decision="'+decision+'"]');if(btn)btn.disabled=true;
+    try{const {data,error}=await supabaseClient.rpc('decide_quarterly_graduation',{p_assessment_id:saved.id,p_decision:decision,p_decision_note:decisionNote.value.trim()||null});if(error)throw error;
+     decisionStatus.textContent=decision==='approved'?'Graduação aprovada e registrada.':decision==='deferred'?'Graduação adiada pelo Mestre.':'Recomendação não autorizada pelo Mestre.';
+     status.textContent=label+' Decisão registrada.';
+     await loadAssessment();
+    }catch(e){decisionStatus.textContent='Não foi possível registrar a decisão: '+e.message;decisionStatus.className='status-line error';if(btn)btn.disabled=false;}
+   };
+   [['approved','Autorizar graduação'],['deferred','Adiar graduação'],['rejected','Não autorizar']].forEach(([v,l])=>{const b=node('button',l,'btn btn-outline small-btn');b.type='button';b.dataset.decision=v;b.addEventListener('click',()=>act(v,l));decisionButtons.append(b);});
+   decisionPanel.append(field('Parecer/observação do Mestre',decisionNote),decisionButtons);
+   details.append(decisionPanel);
+  }else if(guardian&&saved.id){
+   const {data:decisions,error:decisionError}=await supabaseClient.from('graduation_decisions').select('decision,decision_note,decided_at,recommended_belt,recommended_degrees').eq('assessment_id',saved.id).maybeSingle();
+   if(!decisionError&&decisions){const d=node('div',undefined,'activity-card');d.append(node('h3','Decisão do Mestre'),node('p',({approved:'Graduação autorizada',deferred:'Graduação adiada',rejected:'Recomendação não autorizada'}[decisions.decision]||'Decisão registrada')+' • '+fmtDate(decisions.decided_at),'status-line'));if(decisions.decision_note)d.append(node('p',decisions.decision_note,'status-line'));details.append(d);}
   }
   if(quarter===4&&new Date()>=new Date(year,11,31,23,59,59)&&Number(totalLine.textContent.match(/[\d.]+/)?.[0]||0)>=70&&pct>=75){
    const cert=node('button','Gerar certificado de graduação (PDF)','btn btn-outline small-btn');cert.type='button';cert.addEventListener('click',()=>{const w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Certificado — Projeto Sementes</title><style>body{font-family:Arial;text-align:center;padding:60px;color:#0b1b30}h1{color:#9b741b}p{font-size:18px;line-height:1.7}.seal{border:5px double #d7b34b;padding:40px}</style><div class="seal"><h1>PROJETO SEMENTES</h1><h2>CERTIFICADO DE GRADUAÇÃO</h2><p>Certificamos que <b>'+String(st.full_name||'').replace(/[&<>"]/g,'')+'</b> concluiu a avaliação anual de Jiu-Jitsu e foi considerado apto para a graduação.</p><p>Faixa registrada: '+String(belt).replace(/[&<>"]/g,'')+'</p><p>Corumbá-MS, '+new Date().toLocaleDateString('pt-BR')+'</p><br><br>_________________________________<br>Professor responsável</div><script>window.onload=()=>window.print()<\/script></html>');w.document.close();});
