@@ -1863,7 +1863,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
    decisionPanel.append(node('h3','Decisão do Mestre'));
    decisionPanel.append(node('p','Graduação atual: '+belt+' • '+degrees+' grau(s). Recomendação: '+suggestion.label+'.','status-line'));
    const decisionNote=node('textarea');decisionNote.className='search';decisionNote.rows=3;decisionNote.style.width='100%';decisionNote.placeholder='Observação da decisão (opcional)';
-   const decisionButtons=node('div',undefined,'student-tools');
+   const decisionButtons=node('div',undefined,'student-tools');decisionButtons.style.cssText='display:flex!important;flex-wrap:wrap!important;gap:10px!important;margin-top:14px!important;';
    const act=async(decision,label)=>{
     const btn=decisionButtons.querySelector('[data-decision="'+decision+'"]');if(btn)btn.disabled=true;
     try{const {data,error}=await supabaseClient.rpc('decide_quarterly_graduation',{p_assessment_id:saved.id,p_decision:decision,p_decision_note:decisionNote.value.trim()||null});if(error)throw error;
@@ -1872,7 +1872,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
      await loadAssessment();
     }catch(e){decisionStatus.textContent='Não foi possível registrar a decisão: '+e.message;decisionStatus.className='status-line error';if(btn)btn.disabled=false;}
    };
-   [['approved','Autorizar graduação'],['deferred','Adiar graduação'],['rejected','Não autorizar']].forEach(([v,l])=>{const b=node('button',l,'btn btn-outline small-btn');b.type='button';b.dataset.decision=v;b.addEventListener('click',()=>act(v,l));decisionButtons.append(b);});
+   [['approved','Autorizar graduação'],['deferred','Adiar graduação'],['rejected','Não autorizar']].forEach(([v,l])=>{const b=node('button',l,'btn btn-outline small-btn');b.type='button';b.dataset.decision=v;b.style.cssText='display:inline-flex!important;visibility:visible!important;opacity:1!important;position:static!important;padding:11px 16px!important;border:1px solid #d7b34b!important;border-radius:5px!important;background:'+(v==='approved'?'#d7b34b':'#0b1b30')+'!important;color:'+(v==='approved'?'#101a29':'#ffffff')+'!important;font-weight:800!important;cursor:pointer!important;';b.addEventListener('click',()=>act(v,l));decisionButtons.append(b);});
    decisionPanel.append(field('Parecer/observação do Mestre',decisionNote),decisionButtons);
    details.append(decisionPanel);
   }else if(guardian&&saved.id){
