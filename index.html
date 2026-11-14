@@ -1765,12 +1765,13 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const st=students.find(x=>x.id===studentSelect.value);
   if(!st){status.textContent='Nenhum aluno disponível para este acesso.';return;}
   const year=Number(yearSelect.value),quarter=Number(quarterSelect.value);const periodStart=year+'-'+String((quarter-1)*3+1).padStart(2,'0')+'-01';const periodEnd=new Date(Date.UTC(year,quarter*3,0)).toISOString().slice(0,10);
-  const [att,grad,assess]=await Promise.all([
+  const [att,grad,assess,legacy]=await Promise.all([
    supabaseClient.from('attendance').select('status,lesson:lessons!inner(lesson_date)').eq('student_id',st.id).gte('lesson.lesson_date',periodStart).lte('lesson.lesson_date',periodEnd),
    supabaseClient.from('graduations').select('belt,degrees,awarded_on').eq('student_id',st.id).order('awarded_on',{ascending:false}).limit(1),
-   supabaseClient.from('quarterly_assessments').select('*').eq('student_id',st.id).eq('assessment_year',year).eq('quarter',quarter).maybeSingle()
+   supabaseClient.from('quarterly_assessments').select('*').eq('student_id',st.id).eq('assessment_year',year).eq('quarter',quarter).maybeSingle(),
+   supabaseClient.from('technical_evaluations').select('evaluated_on,evaluation').eq('student_id',st.id).order('evaluated_on',{ascending:false}).limit(20)
   ]);
-  if(att.error)throw att.error;if(grad.error)throw grad.error;if(assess.error)throw assess.error;
+  if(att.error)throw att.error;if(grad.error)throw grad.error;if(assess.error)throw assess.error;if(legacy.error)throw legacy.error;
   const rows=att.data||[],present=rows.filter(x=>x.status==='present').length,total=rows.length,pct=total?present/total*100:0;
   const saved=assess.data||{};
   const belt=(grad.data||[])[0]?.belt||st.belt||'Não informada';
@@ -1815,6 +1816,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
    const cert=node('button','Gerar certificado de graduação (PDF)','btn btn-outline small-btn');cert.type='button';cert.addEventListener('click',()=>{const w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Certificado — Projeto Sementes</title><style>body{font-family:Arial;text-align:center;padding:60px;color:#0b1b30}h1{color:#9b741b}p{font-size:18px;line-height:1.7}.seal{border:5px double #d7b34b;padding:40px}</style><div class="seal"><h1>PROJETO SEMENTES</h1><h2>CERTIFICADO DE GRADUAÇÃO</h2><p>Certificamos que <b>'+String(st.full_name||'').replace(/[&<>"]/g,'')+'</b> concluiu a avaliação anual de Jiu-Jitsu e foi considerado apto para a graduação.</p><p>Faixa registrada: '+String(belt).replace(/[&<>"]/g,'')+'</p><p>Corumbá-MS, '+new Date().toLocaleDateString('pt-BR')+'</p><br><br>_________________________________<br>Professor responsável</div><script>window.onload=()=>window.print()<\/script></html>');w.document.close();});
    details.append(cert);
   }
+  if((legacy.data||[]).length){const legacyBox=node('div',undefined,'activity-card');legacyBox.append(node('h3','Histórico técnico anterior'));(legacy.data||[]).forEach(item=>legacyBox.append(node('p',fmtDate(item.evaluated_on)+' — '+(item.evaluation||'Avaliação registrada'),'status-line')));details.append(legacyBox);}
   status.textContent='Ciclo '+quarter+'º trimestre de '+year+'. '+(guardian?'Resultado somente para consulta.':'A avaliação é editável pela equipe autorizada.');
  }
  try{
