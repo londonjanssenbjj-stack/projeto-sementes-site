@@ -443,7 +443,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
   <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-label="Abrir menu">☰ Menu</button>
   <a class="btn btn-outline" href="#inicio" id="screenBack" aria-label="Voltar à página inicial">← Voltar ao início</a>
   <nav id="mainNav" aria-label="Navegação principal">
-   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#fe-familia">Família</a><a href="#fe-familia">Fé</a><a href="#horarios-aulas">Aulas</a><a href="#galeria">Atividades</a><a href="#parcerias">Parcerias</a><a href="#matricula">Matrícula</a>
+   <a href="#projeto">O Projeto</a><a href="#atuacao">Nossa atuação</a><a href="#impacto">Impacto</a><a href="#fe-familia">Família</a><a href="#fe-familia">Fé</a><a href="#horarios-aulas">Aulas</a><a href="#eventos-projeto">Eventos</a><a href="#galeria">Atividades</a><a href="#parcerias">Parcerias</a><a href="#matricula">Matrícula</a>
   </nav>
   <div class="actions"><button class="btn btn-gold" id="openGuardianLogin" type="button" aria-label="Acessar Portal do Responsável"  >Portal do Responsável</button><button class="btn btn-outline" id="openTeamLogin" type="button" aria-label="Acessar painel da equipe"  >Acesso da Equipe</button></div>
  </div>
@@ -568,6 +568,7 @@ body.standalone-view .actions #openGuardianLogin,body.standalone-view .actions #
  <div class="section-head"><div><p class="kicker">JIU-JITSU PARA CRIANÇAS E ADOLESCENTES</p><h2>Disciplina que transforma <em>vidas.</em></h2></div><p>Aulas aos sábados na IEQ Guaicurus. Para saber mais, entre em contato com a equipe do projeto.</p></div>
  <div class="class-schedule"><article><span>6 A 10 ANOS</span><strong>9h30 às 10h30</strong><small>Turma infantil</small></article><article><span>11 A 17 ANOS</span><strong>10h30 às 11h30</strong><small>Turma de adolescentes</small></article><article><span>LOCAL</span><strong>IEQ Guaicurus</strong><small>Rua Edu Rocha, 218 — Corumbá-MS</small></article></div>
 </div></section>
+<section class="block" id="eventos-projeto"><div class="wrap"><div class="section-head"><div><p class="kicker">AGENDA DO PROJETO</p><h2>Próximos encontros <em>e conquistas.</em></h2></div><p>Momentos importantes para nossos alunos e suas famílias.</p></div><div class="class-schedule"><article><span>PALESTRA • O VALOR DO ESTUDO</span><strong>25 de novembro de 2026 • 19h</strong><small>Com os pedagogos Luis e Edima — IEQ Guaicurus</small></article><article><span>GRADUAÇÃO DE JIU-JITSU</span><strong>19 de dezembro de 2026</strong><small>Entrega dos primeiros graus, conforme avaliação e decisão do Mestre</small></article></div></div></section>
 <section class="block section-dark" id="galeria"><div class="wrap">
  <div class="section-head"><div><p class="kicker">VIDA EM MOVIMENTO</p><h2>Pequenas conquistas.<br><em>Grandes sementes.</em></h2></div><p>Um espaço para registrar treinos, encontros, palestras e ações comunitárias. As imagens finais devem ser substituídas por fotos reais autorizadas do Projeto Sementes.</p></div>
  <div class="gallery"><img src="Festa_Infantil_Comunitaria.png" alt="Festa infantil comunitária" loading="lazy"><img src="Culto_Noturno_Igreja.png" alt="Culto noturno na igreja" loading="lazy"><img src="Aula_Jiu_Jitsu_Dojo.png" alt="Aula de Jiu-Jitsu no dojo" loading="lazy"><img src="Lutando_Jiu_Jitsu.jpeg" alt="Prática de Jiu-Jitsu" loading="lazy"><img src="TTreino_Jiu_Jitsu_Academia.png" alt="Treino de Jiu-Jitsu infantil" loading="lazy"><img src="Treino_Jiu_Jitsu_Infantil.png" alt="Treino de Jiu-Jitsu na academia" loading="lazy"><img src="Turma_Jiu_Jitsu_Dojo.png" alt="Turma de Jiu-Jitsu do Projeto Sementes" loading="lazy"></div>
@@ -1807,21 +1808,22 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   header.append(node('h3',st.full_name||'Aluno'),node('p','Categoria CBJJ/IBJJF por ano civil: '+ageCategory(st.birth_date)+' • Faixa: '+belt+' • Graus registrados: '+degrees,'status-line'),node('p','Frequência no trimestre: '+present+'/'+total+' presenças ('+pct.toFixed(1).replace('.',',')+'%)','status-line'));
   details.append(header);
   const report=node('div',undefined,'student-tools');report.style.marginTop='12px';
-  const reportCheck=node('input');reportCheck.type='checkbox';reportCheck.checked=saved.school_report_checked===true;reportCheck.disabled=guardian;
-  const followCheck=node('input');followCheck.type='checkbox';followCheck.checked=saved.parent_followup===true;followCheck.disabled=guardian;
+  const reportCheck=node('input');reportCheck.type='checkbox';reportCheck.checked=saved.school_report_checked===true;reportCheck.disabled=false;
+  const followCheck=node('input');followCheck.type='checkbox';followCheck.checked=saved.parent_followup===true;followCheck.disabled=false;
   report.append(field('Boletim escolar conferido (10 pontos)',reportCheck),field('Acompanhamento familiar realizado (10 pontos)',followCheck));details.append(report);
   const attendanceScore=input('number',30);attendanceScore.step='0.5';attendanceScore.value=(saved.attendance_score??Math.min(30,pct*.30)).toFixed(1);attendanceScore.readOnly=true;
-  const discipline=input('number',25);discipline.step='0.5';discipline.value=saved.discipline_score??0;
-  const education=input('number',20);education.step='0.5';education.value=saved.education_score??((reportCheck.checked?10:0)+(followCheck.checked?10:0));
-  const technical=input('number',25);technical.step='0.5';technical.value=saved.technical_score??0;
+  const discipline=input('number',20);discipline.step='0.5';discipline.value=saved.discipline_score??0;discipline.readOnly=guardian;
+  const education=input('number',15);education.step='0.5';education.value=saved.education_score??((reportCheck.checked?7.5:0)+(followCheck.checked?7.5:0));education.readOnly=true;
+  const technical=input('number',20);technical.step='0.5';technical.value=saved.technical_score??0;technical.readOnly=guardian;
   const opinion=node('textarea',saved.teacher_opinion||'','search');opinion.rows=4;opinion.placeholder='Parecer do professor para a família…';opinion.style.width='100%';opinion.readOnly=guardian;
   const scoring=node('div',undefined,'student-detail-grid');
-  scoring.append(field('Frequência — máximo 30 (automático)',attendanceScore),field('Disciplina, respeito e etiqueta — máximo 25',discipline),field('Educação e família — máximo 20',education),field('Exame técnico CBJJ — máximo 25',technical));
+  const participation=input('number',15);participation.step='0.5';participation.value=saved.participation_score??0;participation.readOnly=guardian;
+  scoring.append(field('Frequência — máximo 30 (automático)',attendanceScore),field('Disciplina, respeito e etiqueta — máximo 20',discipline),field('Educação e família — máximo 15',education),field('Exame técnico CBJJ — máximo 20',technical),field('Palestras e atividades do Projeto — máximo 15',participation));
   details.append(node('h3','Pontuação (100 pontos)'),scoring);
   const techNote=node('p','Exame prático: fundamentos, posições, movimentações, defesa, controle e técnicas adequadas à idade e faixa, respeitando as restrições oficiais da categoria.','status-line');details.append(techNote);
   const totalLine=node('h3','');const statusLine=node('p','','status-line');
-  const updateTotal=()=>{const totalScore=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);const eligible=totalScore>=70&&pct>=75;totalLine.textContent='Total: '+totalScore.toFixed(1)+'/100';statusLine.textContent=eligible?'✓ APTO PARA GRADUAÇÃO':'⚠ EM ACOMPANHAMENTO';statusLine.style.fontWeight='800';statusLine.style.color=eligible?'#16803c':'#b66a00';};
-  [discipline,education,technical,reportCheck,followCheck].forEach(el=>el.addEventListener('input',()=>{if(el===reportCheck||el===followCheck)education.value=(reportCheck.checked?10:0)+(followCheck.checked?10:0);updateTotal();if(recommendationText.isConnected)showRecommendation();}));
+  const updateTotal=()=>{const totalScore=[attendanceScore,discipline,education,technical,participation].reduce((sum,x)=>sum+(Number(x.value)||0),0);const eligible=totalScore>=70&&pct>=75;totalLine.textContent='Total: '+totalScore.toFixed(1)+'/100';statusLine.textContent=eligible?'✓ APTO PARA GRADUAÇÃO':'⚠ EM ACOMPANHAMENTO';statusLine.style.fontWeight='800';statusLine.style.color=eligible?'#16803c':'#b66a00';};
+  [discipline,technical,participation,reportCheck,followCheck].forEach(el=>el.addEventListener('input',()=>{if(el===reportCheck||el===followCheck)education.value=(reportCheck.checked?7.5:0)+(followCheck.checked?7.5:0);updateTotal();if(recommendationText.isConnected)showRecommendation();}));
   details.append(totalLine,statusLine,field('Parecer do professor',opinion));updateTotal();
   const recommendationBox=node('div',undefined,'activity-card');recommendationBox.style.cssText='margin-top:14px;padding:16px;border-left:4px solid #d7b34b';
   const recommendationTitle=node('h3','Recomendação de graduação');recommendationBox.append(recommendationTitle);
@@ -1837,15 +1839,21 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   };
   showRecommendation();
 
+  if(guardian){
+   const guardianSave=node('button','Salvar avaliação escolar e familiar','btn btn-gold small-btn');guardianSave.type='button';
+   guardianSave.addEventListener('click',async()=>{guardianSave.disabled=true;try{const {error}=await supabaseClient.rpc('save_guardian_quarterly_review',{p_student_id:st.id,p_assessment_year:year,p_quarter:quarter,p_school_report_checked:reportCheck.checked,p_parent_followup:followCheck.checked});if(error)throw error;status.textContent='Avaliação escolar e familiar registrada.';await loadAssessment();}catch(e){status.textContent='Não foi possível salvar a avaliação familiar: '+e.message;status.className='status-line error';}finally{guardianSave.disabled=false;}});
+   details.append(guardianSave);
+  }
+
   if(!guardian){
-   [discipline,education,technical].forEach(el=>el.addEventListener('change',()=>{const max=Number(el.max);if(Number(el.value)<0)el.value=0;if(Number(el.value)>max)el.value=max;updateTotal();}));
+   [discipline,technical,participation].forEach(el=>el.addEventListener('change',()=>{const max=Number(el.max);if(Number(el.value)<0)el.value=0;if(Number(el.value)>max)el.value=max;updateTotal();}));
    const save=node('button','Salvar avaliação trimestral','btn btn-gold small-btn');save.type='button';
    save.addEventListener('click',async()=>{
-    const vals=[discipline,education,technical].map(x=>Number(x.value)||0);
-    if(vals.some((v,i)=>v>[25,20,25][i])){status.textContent='Confira os limites máximos de pontuação.';return;}
+    const vals=[discipline,education,technical,participation].map(x=>Number(x.value)||0);
+    if(vals.some((v,i)=>v>[20,15,20,15][i])){status.textContent='Confira os limites máximos de pontuação.';return;}
     save.disabled=true;
     try{
-     const payload={student_id:st.id,class_id:classSelect.value||null,assessment_year:year,quarter,attendance_percent:Number(pct.toFixed(2)),attendance_score:Number(attendanceScore.value),discipline_score:vals[0],education_score:vals[1],technical_score:vals[2],school_report_checked:reportCheck.checked,parent_followup:followCheck.checked,teacher_opinion:opinion.value.trim()||null,evaluated_by:currentProfile.id,technical_items:{age_category:ageCategory(st.birth_date)},recommended_belt:suggestion?.belt||null,recommended_degrees:suggestion?.degrees||null,recommendation_kind:suggestion?.kind||null};
+     const payload={student_id:st.id,class_id:classSelect.value||null,assessment_year:year,quarter,attendance_percent:Number(pct.toFixed(2)),attendance_score:Number(attendanceScore.value),discipline_score:vals[0],education_score:vals[1],technical_score:vals[2],participation_score:vals[3],school_report_checked:reportCheck.checked,parent_followup:followCheck.checked,teacher_opinion:opinion.value.trim()||null,evaluated_by:currentProfile.id,technical_items:{age_category:ageCategory(st.birth_date)},recommended_belt:suggestion?.belt||null,recommended_degrees:suggestion?.degrees||null,recommendation_kind:suggestion?.kind||null};
      const {error}=await supabaseClient.from('quarterly_assessments').upsert(payload,{onConflict:'student_id,assessment_year,quarter'});if(error)throw error;
      status.textContent='Avaliação trimestral salva com sucesso.';await loadAssessment();
     }catch(e){status.textContent='Falha ao salvar avaliação: '+e.message;status.className='status-line error';}
