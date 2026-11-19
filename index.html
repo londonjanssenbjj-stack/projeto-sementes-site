@@ -1810,7 +1810,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const report=node('div',undefined,'student-tools');report.style.marginTop='12px';
   const reportCheck=node('input');reportCheck.type='checkbox';reportCheck.checked=saved.school_report_checked===true;reportCheck.disabled=false;
   const followCheck=node('input');followCheck.type='checkbox';followCheck.checked=saved.parent_followup===true;followCheck.disabled=false;
-  report.append(field('Boletim escolar conferido (10 pontos)',reportCheck),field('Acompanhamento familiar realizado (10 pontos)',followCheck));details.append(report);
+  report.append(field('Boletim escolar conferido (7,5 pontos)',reportCheck),field('Acompanhamento familiar realizado (7,5 pontos)',followCheck));details.append(report);
   const attendanceScore=input('number',30);attendanceScore.step='0.5';attendanceScore.value=(saved.attendance_score??Math.min(30,pct*.30)).toFixed(1);attendanceScore.readOnly=true;
   const discipline=input('number',20);discipline.step='0.5';discipline.value=saved.discipline_score??0;discipline.readOnly=guardian;
   const education=input('number',15);education.step='0.5';education.value=saved.education_score??((reportCheck.checked?7.5:0)+(followCheck.checked?7.5:0));education.readOnly=true;
@@ -1831,7 +1831,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const decisionStatus=node('p','','status-line');recommendationBox.append(decisionStatus);
   let savedAssessmentId=saved.id||null;
   const showRecommendation=()=>{
-   const score=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);
+   const score=[attendanceScore,discipline,education,technical,participation].reduce((sum,x)=>sum+(Number(x.value)||0),0);
    const ok=score>=70&&pct>=75&&!!suggestion&&suggestion.kind!=='age_hold';
    recommendationText.textContent=score>=70&&pct>=75&&suggestion?.kind==='age_hold'?suggestion.label+'. A pontuação foi atingida, mas a idade mínima ainda não permite a recomendação.':ok?(suggestion.label+' • '+suggestion.ageModel+'. A recomendação não altera a graduação automaticamente.'):'Ainda não há recomendação: alcance 70 pontos, frequência mínima de 75% e confirme os dados de idade/faixa.';
    recommendationText.style.color=ok?'#16803c':'#8a5a00';
@@ -1864,7 +1864,7 @@ async function renderQuarterlyAssessments(content,guardian=false,guardianChildre
   const ageForDisplay=st.birth_date?currentYear-Number(String(st.birth_date).slice(0,4)):null;
   recommendationBox.append(node('p','Graduação atual: '+belt+' • '+degrees+' grau(s)'+(ageForDisplay!==null?' • Idade civil: '+ageForDisplay+' anos':''),'status-line'));
   details.append(recommendationBox);
-  const currentScore=[attendanceScore,discipline,education,technical].reduce((sum,x)=>sum+(Number(x.value)||0),0);
+  const currentScore=[attendanceScore,discipline,education,technical,participation].reduce((sum,x)=>sum+(Number(x.value)||0),0);
   const canRecommend=currentScore>=70&&pct>=75&&!!suggestion&&suggestion.kind!=='age_hold';
   if(!guardian&&canRecommend&&saved.id&&currentProfile?.role==='admin'){
    const decisionPanel=node('div',undefined,'activity-card');decisionPanel.style.cssText='margin-top:14px;padding:16px;border-left:4px solid #d7b34b';
